@@ -442,6 +442,75 @@
         continue;
       }
 
+      // RT / LT always keep the NEXT word on the same line.
+      // Supports:
+      //   RT M4D
+      //   LT M4D
+      //   RT/M4D
+      //   LT-M4D
+      if (token.toUpperCase() === 'RT' || token.toUpperCase() === 'LT') {
+        var direction = token.toUpperCase();
+
+        if (i + 1 < taskTokens.length) {
+          var nextDir = taskTokens[++i];
+
+          nextDir = nextDir
+            .replace(/^[\/-]+/, '')
+            .replace(/[\/-]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+          if (nextDir) {
+            tasks.push(clean(direction + ' ' + nextDir));
+          }
+        } else {
+          tasks.push(direction);
+        }
+
+        continue;
+      }
+
+      // RT/M4D or LT-M4D
+      if (/^(RT|LT)[\/-]/i.test(token)) {
+        var dirTask = token
+          .replace(/^(RT|LT)[\/-]+/i, '$1 ')
+          .replace(/[\/-]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        if (dirTask) {
+          tasks.push(clean(dirTask));
+        }
+
+        continue;
+      }
+
+      // REM / INSTALL / SERV stay attached to the word BEFORE them.
+      //
+      // Example:
+      //   ABC REM
+      //   XYZ INSTALL
+      //   PANEL SERV
+      //
+      // becomes:
+      //   ABC REM
+      //   XYZ INSTALL
+      //   PANEL SERV
+      if (
+        token.toUpperCase() === 'REM' ||
+        token.toUpperCase() === 'INSTALL' ||
+        token.toUpperCase() === 'SERV'
+      ) {
+        if (tasks.length > 0) {
+          tasks[tasks.length - 1] =
+            clean(tasks[tasks.length - 1] + ' ' + token.toUpperCase());
+        } else {
+          tasks.push(token.toUpperCase());
+        }
+
+        continue;
+      }
+
       // / and - join words into a single task.
       token = token
         .replace(/[\/-]+/g, ' ')
