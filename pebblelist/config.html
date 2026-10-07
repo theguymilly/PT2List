@@ -83,7 +83,7 @@
   left: 0;
   top: 58px;
   bottom: calc(65px + env(safe-area-inset-bottom));
-  width: 31%;
+  width: 20%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   background: var(--card);
@@ -94,7 +94,7 @@
 
 .phone-list-row {
   position: relative;
-  min-height: 58px;
+  min-height: 46px;
   overflow: hidden;
   border-bottom: 1px solid var(--line);
   background: var(--card);
@@ -106,30 +106,40 @@
 .phone-list-row .phone-list-content {
   position: relative;
   z-index: 2;
-  min-height: 58px;
+  min-height: 46px;
   box-sizing: border-box;
-  padding: 9px 8px;
+  padding: 7px 6px;
   background: var(--card);
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  align-items: center;
+  gap: 5px;
   transition: transform .18s ease;
   will-change: transform;
 }
 
 .phone-list-row .plist-name {
-  font-size: 14px;
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.15;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
+  
+.phone-list-row.dragging-list {
+  box-shadow: 0 4px 14px rgba(0,0,0,.22);
+  border-radius: 8px;
+  z-index: 20;
+}
+  
 .phone-list-row .plist-count {
+  flex: 0 0 auto;
   color: var(--muted);
-  font-size: 11px;
-  margin-top: 3px;
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .phone-list-row.cur .phone-list-content {
@@ -161,7 +171,7 @@
 }
 
 #phoneContent {
-  margin-left: 31%;
+  margin-left: 20%;
   min-width: 0;
 }
 
@@ -171,11 +181,11 @@
 
 @media (min-width: 800px) {
   #phoneLists {
-    width: 260px;
+    width: 220px;
   }
 
   #phoneContent {
-    margin-left: 260px;
+    margin-left: 220px;
   }
 }
 </style>
@@ -473,14 +483,313 @@
   var dragging = false;
   var open = false;
   var moved = false;
+  var mode = null;
 
   var DELETE_WIDTH = 72;
   var MAX_SWIPE = DELETE_WIDTH;
+  var DRAG_THRESHOLD = 8;
 
   function setX(x, animate) {
     content.style.transition = animate ? 'transform .18s ease' : 'none';
     content.style.transform = 'translateX(' + x + 'px)';
   }
+
+  function close() {
+    open = false;
+    currentX = 0;
+    setX(0, true);
+  }
+
+  function reveal() {
+    open = true;
+    currentX = -DELETE_WIDTH;
+    setX(-DELETE_WIDTH, true);
+  }
+
+  function startReorder() {
+    row.classList.add('dragging-list');
+    row.style.zIndex = '20';
+    row.style.opacity = '0.85';
+  }
+
+  function endReorder() {
+    row.classList.remove('dragging-list');
+    row.style.zIndex = '';
+    row.style.opacity = '';
+  }
+
+  function moveList(from, to) {
+    if (from === to) return;
+
+    var movedList = state.lists.splice(from, 1)[0];
+    state.lists.splice(to, 0, movedList);
+
+    /*
+     * Keep the currently selected list pointing at the
+     * same actual list after reordering.
+     */
+    if (cur === from) {
+      cur = to;
+    } else if (from < cur && to >= cur) {
+      cur--;
+    } else if (from > cur && to <= cur) {
+      cur++;
+    }
+  }
+
+  row.addEventListener('touchstart', function (e) {
+    if (!e.touches || !e.touches.length) return;
+
+    var t = e.touches[0];
+
+    startX = t.clientX;
+    startY = t.clientY;
+    currentX = open ? -DELETE_WIDTH : 0;
+
+    dragging = true;
+    moved = false;
+    mode = null;
+
+    content.style.transition = 'none';
+  }, { passive: true });
+
+  row.addEventListener('touchmove', function (e) {
+    if (!dragging || !e.touches || !e.touches.length) return;
+
+    var t = e.touches[0];
+    var dx = t.clientX - startX;
+    var dy = t.clientY - startY;
+
+    /*
+     * Decide whether this is horizontal swipe or
+     * vertical list reordering.
+     */
+    if (!mode) {
+      if (Math.abs(dx) < DRAG_THRESHOLD &&
+          Math.abs(dy) < DRAG_THRESHOLD) {
+        return;
+      }
+
+      if (Math.abs(dx) > Math.abs(dy)) {
+        mode = 'swipe';
+      } else {
+        mode = 'reorder';
+
+        /*
+         * A row that was showing DELETE is closed before
+         * it becomes a reorder operation.
+         */
+        if (open) {
+          close();
+        }
+
+        startReorder();
+      }
+
+      moved = true;
+    }
+
+    /*
+     * Horizontal swipe
+     */
+    if (mode === 'swipe') {
+      var x = open ? -DELETE_WIDTH + dx : dx;
+
+      if (x > 0) x = 0;
+      if (x < -MAX_SWIPE) x = -MAX_SWIPE;
+
+      currentX = x;
+      setX(x, false);
+
+      if (e.cancelable) e.preventDefault();
+      return;
+    }
+
+    /*
+     * Vertical list reorder
+     */
+    if (mode === 'reorder') {
+      var rows = Array.prototype.slice.call(
+        $('phoneLists').querySelectorAll('.phone-list-row')
+      );
+
+      var currentRow = row;
+      var currentIndex = state.lists.indexOf(
+        state.lists[index]
+      );
+
+      if (currentIndex < 0) {
+        dragging = false;
+        endReorder();
+        return;
+      }
+
+      var rect = currentRow.getBoundingClientRect();
+      var centerY = rect.top + rect.height / 2;
+
+      /*
+       * Find the row we're currently over.
+       */
+      var targetIndex = currentIndex;
+
+      rows.forEach(function (otherRow, otherIndex) {
+        if (otherRow === currentRow) return;
+
+        var otherRect = otherRow.getBoundingClientRect();
+        var otherCenter = otherRect.top + otherRect.height / 2;
+
+        if (dy < 0 && centerY < otherCenter && centerY + dy < otherCenter) {
+          if (otherIndex < targetIndex) {
+            targetIndex = otherIndex;
+          }
+        }
+
+        if (dy > 0 && centerY > otherCenter && centerY + dy > otherCenter) {
+          if (otherIndex > targetIndex) {
+            targetIndex = otherIndex;
+          }
+        }
+      });
+
+      /*
+       * Simpler and more reliable midpoint calculation:
+       * use the finger's actual Y position.
+       */
+      var pointerY = t.clientY;
+
+      targetIndex = currentIndex;
+
+      rows.forEach(function (otherRow, otherIndex) {
+        if (otherRow === currentRow) return;
+
+        var r = otherRow.getBoundingClientRect();
+        var midpoint = r.top + r.height / 2;
+
+        if (pointerY < midpoint && otherIndex < targetIndex) {
+          targetIndex = otherIndex;
+        }
+
+        if (pointerY > midpoint && otherIndex > targetIndex) {
+          targetIndex = otherIndex;
+        }
+      });
+
+      if (targetIndex !== currentIndex) {
+        /*
+         * Identify the actual list being dragged before
+         * changing the array.
+         */
+        var draggedList = state.lists[currentIndex];
+
+        moveList(currentIndex, targetIndex);
+
+        /*
+         * Re-render the left panel. The current row is
+         * recreated in its new position.
+         */
+        renderPhoneLists();
+
+        /*
+         * Find the newly rendered row for the dragged list.
+         */
+        var newIndex = state.lists.indexOf(draggedList);
+        var newRow = $('phoneLists').querySelector(
+          '.phone-list-row[data-i="' + newIndex + '"]'
+        );
+
+        if (newRow) {
+          newRow.classList.add('dragging-list');
+        }
+
+        index = newIndex;
+      }
+
+      if (e.cancelable) e.preventDefault();
+    }
+  }, { passive: false });
+
+  row.addEventListener('touchend', function () {
+    if (!dragging) return;
+
+    dragging = false;
+
+    /*
+     * Reordering finished.
+     */
+    if (mode === 'reorder') {
+      endReorder();
+      persist();
+      renderPhoneLists();
+      return;
+    }
+
+    /*
+     * Normal tap.
+     */
+    if (!moved) {
+      if (open) {
+        close();
+        return;
+      }
+
+      if (editing) return;
+
+      cur = index;
+      window.scrollTo(0, 0);
+      render();
+      return;
+    }
+
+    /*
+     * Horizontal swipe finished.
+     */
+    if (mode === 'swipe') {
+      if (currentX <= -(DELETE_WIDTH * 0.45)) {
+        reveal();
+      } else {
+        close();
+      }
+    }
+  }, { passive: true });
+
+  /*
+   * Delete button
+   */
+  del.addEventListener('click', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (editing) return;
+
+    var deletedIndex = state.lists.indexOf(
+      state.lists[index]
+    );
+
+    if (deletedIndex < 0) return;
+
+    state.lists.splice(deletedIndex, 1);
+
+    /*
+     * Always keep at least one list.
+     */
+    if (!state.lists.length) {
+      state.lists.push({
+        name: 'List',
+        items: []
+      });
+      cur = 0;
+    } else if (deletedIndex < cur) {
+      cur--;
+    } else if (deletedIndex === cur) {
+      if (cur >= state.lists.length) {
+        cur = state.lists.length - 1;
+      }
+    }
+
+    persist();
+    render();
+  });
+}
 
   function close() {
     open = false;
