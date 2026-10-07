@@ -380,177 +380,182 @@
   };
 
   function buildAircraftList(v) {
-    var tokens = v.split(/\s+/).filter(function (t) {
-      return t.length > 0;
-    });
+  var tokens = v.split(/\s+/).filter(function (t) {
+    return t.length > 0;
+  });
 
-    // Need at least:
-    // 30xx + LOCATION
-    if (tokens.length < 2 || !/^30\d{2}$/.test(tokens[0])) {
-      return false;
+  // Need at least:
+  // 30xx + LOCATION
+  if (tokens.length < 2 || !/^30\d{2}$/.test(tokens[0])) {
+    return false;
+  }
+
+  var tail = tokens[0];
+  var location = tokens[1];
+
+  // Everything after the tail + location becomes tasks.
+  var taskTokens = tokens.slice(2);
+  var tasks = [];
+
+  for (var i = 0; i < taskTokens.length; i++) {
+    var token = taskTokens[i];
+
+    // TOW is always a two-word task.
+    // Supports:
+    //   TOW M4D
+    //   TOW/M4D
+    //   TOW-M4D
+    if (token.toUpperCase() === 'TOW') {
+      if (i + 1 < taskTokens.length) {
+        var next = taskTokens[++i];
+
+        next = next
+          .replace(/^[\/-]+/, '')
+          .replace(/[\/-]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        if (next) {
+          tasks.push(clean('TOW ' + next));
+        }
+      } else {
+        tasks.push('TOW');
+      }
+
+      continue;
     }
 
-    var tail = tokens[0];
-    var location = tokens[1];
-
-    // Everything after the tail + location becomes tasks.
-    var taskTokens = tokens.slice(2);
-    var tasks = [];
-
-    for (var i = 0; i < taskTokens.length; i++) {
-      var token = taskTokens[i];
-
-      // TOW is always a two-word task.
-      // Supports:
-      //   TOW M4D
-      //   TOW/M4D
-      //   TOW-M4D
-      if (token.toUpperCase() === 'TOW') {
-        if (i + 1 < taskTokens.length) {
-          var next = taskTokens[++i];
-
-          next = next
-            .replace(/^[\/-]+/, '')
-            .replace(/[\/-]+/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-
-          if (next) {
-            tasks.push(clean('TOW ' + next));
-          }
-        } else {
-          tasks.push('TOW');
-        }
-
-        continue;
-      }
-
-      // TOW/M4D or TOW-M4D
-      if (/^TOW[\/-]/i.test(token)) {
-        var towTask = token
-          .replace(/^TOW[\/-]+/i, '')
-          .replace(/[\/-]+/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim();
-
-        if (towTask) {
-          tasks.push(clean('TOW ' + towTask));
-        } else {
-          tasks.push('TOW');
-        }
-
-        continue;
-      }
-
-      // RT / LT always keep the NEXT word on the same line.
-      // Supports:
-      //   RT M4D
-      //   LT M4D
-      //   RT/M4D
-      //   LT-M4D
-      if (token.toUpperCase() === 'RT' || token.toUpperCase() === 'LT') {
-        var direction = token.toUpperCase();
-
-        if (i + 1 < taskTokens.length) {
-          var nextDir = taskTokens[++i];
-
-          nextDir = nextDir
-            .replace(/^[\/-]+/, '')
-            .replace(/[\/-]+/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-
-          if (nextDir) {
-            tasks.push(clean(direction + ' ' + nextDir));
-          }
-        } else {
-          tasks.push(direction);
-        }
-
-        continue;
-      }
-
-      // RT/M4D or LT-M4D
-      if (/^(RT|LT)[\/-]/i.test(token)) {
-        var dirTask = token
-          .replace(/^(RT|LT)[\/-]+/i, '$1 ')
-          .replace(/[\/-]+/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim();
-
-        if (dirTask) {
-          tasks.push(clean(dirTask));
-        }
-
-        continue;
-      }
-
-      // REM / INSTALL / SERV stay attached to the word BEFORE them.
-      //
-      // Example:
-      //   ABC REM
-      //   XYZ INSTALL
-      //   PANEL SERV
-      //
-      // becomes:
-      //   ABC REM
-      //   XYZ INSTALL
-      //   PANEL SERV
-      if (
-        token.toUpperCase() === 'REM' ||
-        token.toUpperCase() === 'INSTALL' ||
-        token.toUpperCase() === 'SERV'
-      ) {
-        if (tasks.length > 0) {
-          tasks[tasks.length - 1] =
-            clean(tasks[tasks.length - 1] + ' ' + token.toUpperCase());
-        } else {
-          tasks.push(token.toUpperCase());
-        }
-
-        continue;
-      }
-
-      // / and - join words into a single task.
-      token = token
+    // TOW/M4D or TOW-M4D
+    if (/^TOW[\/-]/i.test(token)) {
+      var towTask = token
+        .replace(/^TOW[\/-]+/i, '')
         .replace(/[\/-]+/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
 
-      if (token) {
-        tasks.push(clean(token));
+      if (towTask) {
+        tasks.push(clean('TOW ' + towTask));
+      } else {
+        tasks.push('TOW');
       }
 
-      if (tasks.length >= MAX_ITEMS) break;
+      continue;
     }
 
-    // Do not create more than the watch can hold.
-    if (state.lists.length >= MAX_LISTS) {
-      toast('Maximum ' + MAX_LISTS + ' lists');
-      return true;
-    }
+    // RT / LT always keep the NEXT word on the same line.
+    // Supports:
+    //   RT M4D
+    //   LT M4D
+    //   RT/M4D
+    //   LT-M4D
+    if (token.toUpperCase() === 'RT' || token.toUpperCase() === 'LT') {
+      var direction = token.toUpperCase();
 
-    var newList = {
-      name: clean(tail + ' ' + location).substring(0, NAME_LEN),
-      items: []
-    };
+      if (i + 1 < taskTokens.length) {
+        var nextDir = taskTokens[++i];
 
-    tasks.forEach(function (task) {
-      if (task && newList.items.length < MAX_ITEMS) {
-        newList.items.push({
-          t: task,
-          d: false
-        });
+        nextDir = nextDir
+          .replace(/^[\/-]+/, '')
+          .replace(/[\/-]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        if (nextDir) {
+          tasks.push(clean(direction + ' ' + nextDir));
+        }
+      } else {
+        tasks.push(direction);
       }
-    });
 
-    state.lists.push(newList);
+      continue;
+    }
 
-    // Open the newly-created aircraft list immediately.
-    cur = state.lists.length - 1;
+    // RT/M4D or LT-M4D
+    if (/^(RT|LT)[\/-]/i.test(token)) {
+      var dirTask = token
+        .replace(/^(RT|LT)[\/-]+/i, '$1 ')
+        .replace(/[\/-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
 
+      if (dirTask) {
+        tasks.push(clean(dirTask));
+      }
+
+      continue;
+    }
+
+    // REM / INSTALL / SERV:
+    // If the NEXT word is one of these, keep the current word
+    // and the next word together as ONE task.
+    //
+    // CFTSET REM       -> CFTSET REM
+    // PANEL INSTALL    -> PANEL INSTALL
+    // XYZ SERV         -> XYZ SERV
+    if (
+      i + 1 < taskTokens.length &&
+      (
+        taskTokens[i + 1].toUpperCase() === 'REM' ||
+        taskTokens[i + 1].toUpperCase() === 'INSTALL' ||
+        taskTokens[i + 1].toUpperCase() === 'SERV'
+      )
+    ) {
+      var service = taskTokens[++i];
+
+      tasks.push(clean(token + ' ' + service.toUpperCase()));
+      continue;
+    }
+
+    // REM / INSTALL / SERV by themselves.
+    if (
+      token.toUpperCase() === 'REM' ||
+      token.toUpperCase() === 'INSTALL' ||
+      token.toUpperCase() === 'SERV'
+    ) {
+      tasks.push(token.toUpperCase());
+      continue;
+    }
+
+    // / and - join words into a single task.
+    token = token
+      .replace(/[\/-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (token) {
+      tasks.push(clean(token));
+    }
+
+    if (tasks.length >= MAX_ITEMS) break;
+  }
+
+  // Do not create more than the watch can hold.
+  if (state.lists.length >= MAX_LISTS) {
+    toast('Maximum ' + MAX_LISTS + ' lists');
     return true;
   }
+
+  var newList = {
+    name: clean(tail + ' ' + location).substring(0, NAME_LEN),
+    items: []
+  };
+
+  tasks.forEach(function (task) {
+    if (task && newList.items.length < MAX_ITEMS) {
+      newList.items.push({
+        t: task,
+        d: false
+      });
+    }
+  });
+
+  state.lists.push(newList);
+
+  // Open the newly-created aircraft list immediately.
+  cur = state.lists.length - 1;
+
+  return true;
+}
 
   function finish(next) {
     if (done) return;
