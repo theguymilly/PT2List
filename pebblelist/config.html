@@ -71,7 +71,113 @@
   select, textarea, .field { width: 100%; font: inherit; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; margin-top: 8px; }
   textarea { min-height: 110px; font: 13px/1.4 ui-monospace, Menlo, monospace; }
   .toast { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 20px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; }
-  .toast.show { opacity: 1; }
+.toast.show { opacity: 1; }
+
+
+/* =========================================================
+   Phone split list view
+   ========================================================= */
+
+#phoneLists {
+  position: fixed;
+  left: 0;
+  top: 58px;
+  bottom: calc(65px + env(safe-area-inset-bottom));
+  width: 31%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--card);
+  border-right: 1px solid var(--line);
+  z-index: 5;
+  padding-bottom: 8px;
+}
+
+.phone-list-row {
+  position: relative;
+  min-height: 58px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: pan-y;
+}
+
+.phone-list-row .phone-list-content {
+  position: relative;
+  z-index: 2;
+  min-height: 58px;
+  box-sizing: border-box;
+  padding: 9px 8px;
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: transform .18s ease;
+  will-change: transform;
+}
+
+.phone-list-row .plist-name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phone-list-row .plist-count {
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 3px;
+}
+
+.phone-list-row.cur .phone-list-content {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.phone-list-row.cur .plist-count {
+  color: var(--accent-ink);
+  opacity: .8;
+}
+
+.phone-list-delete {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 72px;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  background: #ff3b30;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+}
+
+#phoneContent {
+  margin-left: 31%;
+  min-width: 0;
+}
+
+#phoneContent main {
+  min-height: calc(100vh - 160px);
+}
+
+@media (min-width: 800px) {
+  #phoneLists {
+    width: 260px;
+  }
+
+  #phoneContent {
+    margin-left: 260px;
+  }
+}
 </style>
 </head>
 <body>
@@ -81,11 +187,15 @@
 </header>
 <div class="count" id="count"></div>
 
-<main id="main">
-  <div id="pull"><span id="pullTxt">Pull down to add</span></div>
-  <div id="items"></div>
-  <div class="empty" id="emptyHint" hidden>Nothing here yet.<br>Pull down to add an item.</div>
-</main>
+<div id="phoneLists"></div>
+
+<div id="phoneContent">
+  <main id="main">
+    <div id="pull"><span id="pullTxt">Pull down to add</span></div>
+    <div id="items"></div>
+    <div class="empty" id="emptyHint" hidden>Nothing here yet.<br>Pull down to add an item.</div>
+  </main>
+</div>
 
 <div class="bar"><button id="save" class="primary">Send to watch</button></div>
 
@@ -137,7 +247,7 @@
 
 <script>
 (function () {
-  var MAX_LISTS = 6, MAX_ITEMS = 20, TEXT_LEN = 63, NAME_LEN = 23, NOTE_LEN = 1000;
+  var MAX_LISTS = 10, MAX_ITEMS = 20, TEXT_LEN = 63, NAME_LEN = 23, NOTE_LEN = 1000;
   var LS = 'pebblelist_page_v1';
   var fromApp = false;
 
@@ -323,10 +433,173 @@
   // =========================================================================
   // Items
   // =========================================================================
+  function renderPhoneLists() {
+  var root = $('phoneLists');
+  if (!root) return;
+
+  root.innerHTML = '';
+
+  state.lists.forEach(function (l, i) {
+    var row = el('div', 'phone-list-row');
+    row.setAttribute('data-i', i);
+
+    var content = el('div', 'phone-list-content');
+
+    var name = el('div', 'plist-name', l.name);
+    var count = el('div', 'plist-count', String(l.items.length));
+
+    content.appendChild(name);
+    content.appendChild(count);
+
+    if (i === cur) {
+      row.className += ' cur';
+    }
+
+    var del = el('button', 'phone-list-delete', 'DELETE');
+    del.type = 'button';
+    del.setAttribute('aria-label', 'Delete ' + l.name);
+
+    row.appendChild(content);
+    row.appendChild(del);
+    root.appendChild(row);
+
+    setupPhoneListGesture(row, content, del, i);
+  });
+}
+  function setupPhoneListGesture(row, content, del, index) {
+  var startX = 0;
+  var startY = 0;
+  var currentX = 0;
+  var dragging = false;
+  var open = false;
+  var moved = false;
+
+  var DELETE_WIDTH = 72;
+  var MAX_SWIPE = DELETE_WIDTH;
+
+  function setX(x, animate) {
+    content.style.transition = animate ? 'transform .18s ease' : 'none';
+    content.style.transform = 'translateX(' + x + 'px)';
+  }
+
+  function close() {
+    open = false;
+    currentX = 0;
+    setX(0, true);
+  }
+
+  function reveal() {
+    open = true;
+    currentX = -DELETE_WIDTH;
+    setX(-DELETE_WIDTH, true);
+  }
+
+  row.addEventListener('touchstart', function (e) {
+    if (!e.touches || !e.touches.length) return;
+
+    var t = e.touches[0];
+
+    startX = t.clientX;
+    startY = t.clientY;
+    currentX = open ? -DELETE_WIDTH : 0;
+    dragging = true;
+    moved = false;
+
+    content.style.transition = 'none';
+  }, { passive: true });
+
+  row.addEventListener('touchmove', function (e) {
+    if (!dragging || !e.touches || !e.touches.length) return;
+
+    var t = e.touches[0];
+    var dx = t.clientX - startX;
+    var dy = t.clientY - startY;
+
+    if (!moved) {
+      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) {
+        dragging = false;
+        return;
+      }
+
+      if (Math.abs(dx) < 6) return;
+
+      moved = true;
+    }
+
+    var x = open ? -DELETE_WIDTH + dx : dx;
+
+    if (x > 0) x = 0;
+    if (x < -MAX_SWIPE) x = -MAX_SWIPE;
+
+    currentX = x;
+    setX(x, false);
+
+    if (e.cancelable) e.preventDefault();
+  }, { passive: false });
+
+  row.addEventListener('touchend', function () {
+    if (!dragging) return;
+
+    dragging = false;
+
+    if (!moved) {
+      if (open) {
+        close();
+        return;
+      }
+
+      if (editing) return;
+
+      cur = index;
+      window.scrollTo(0, 0);
+      render();
+      return;
+    }
+
+    if (currentX <= -(DELETE_WIDTH * 0.45)) {
+      reveal();
+    } else {
+      close();
+    }
+  }, { passive: true });
+
+  /*
+   * Delete button
+   */
+  del.addEventListener('click', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (editing) return;
+
+    state.lists.splice(index, 1);
+
+    /*
+     * Keep at least one list.
+     */
+    if (!state.lists.length) {
+      state.lists.push({
+        name: 'List',
+        items: []
+      });
+      cur = 0;
+    } else if (index < cur) {
+      cur--;
+    } else if (cur >= state.lists.length) {
+      cur = state.lists.length - 1;
+    }
+
+    persist();
+    render();
+  });
+}
   function render() {
-    state.upper = true;                       // capitals are always on
-    document.body.classList.add('caps');
-    var l = list();
+  state.upper = true;
+  document.body.classList.add('caps');
+
+  renderPhoneLists();
+
+  var l = list();
     $('title').textContent = '';
     $('title').appendChild(document.createTextNode(l.name + ' '));
     $('title').appendChild(el('span', '', '▾'));
