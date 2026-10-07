@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pebble Lists</title>
+<style>
+  :root {
+    --bg: #f6f6f4; --card: #ffffff; --ink: #1b1b1b; --muted: #8a8a86;
+    --line: #e4e4e0; --accent: #e8590c; --accent-ink: #ffffff; --danger: #c92a2a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0e0e0e; --card: #1b1b1b; --ink: #f2f2f0; --muted: #8d8d89; --line: #2d2d2d; --accent: #ff7a2f; --accent-ink: #111; --danger: #ff6b6b; }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.35 -apple-system, system-ui, sans-serif; }
+  body { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+
+  header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 6px; position: sticky; top: 0; background: var(--bg); z-index: 3; }
+  #title { font-size: 26px; font-weight: 700; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #title span { color: var(--muted); font-size: 16px; font-weight: 500; }
+  #menu { font-size: 26px; line-height: 1; padding: 4px 8px; color: var(--muted); }
+  .count { padding: 0 16px 6px; color: var(--muted); font-size: 13px; }
+
+  main { min-height: calc(100vh - 160px); position: relative; touch-action: pan-y; }
+  #pull { overflow: hidden; height: 0; text-align: center; color: var(--muted); font-size: 14px; display: flex; align-items: flex-end; justify-content: center; }
+  #pull span { padding-bottom: 8px; }
+  .item, .newrow { display: flex; align-items: center; gap: 0; min-height: 54px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--bg); position: relative; transition: transform .15s; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .txt { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .item.done .txt, .item.strike .txt { text-decoration: line-through; color: var(--muted); }
+  .item.unstrike .txt { text-decoration: none; color: var(--ink); }
+  .item.deleting .txt { color: var(--danger); text-decoration: none; }
+  .edit { flex: 1; min-width: 0; font: inherit; color: var(--ink); background: transparent; border: 0; outline: 0; padding: 0; -webkit-user-select: text; user-select: text; }
+  .dragging { z-index: 4; background: var(--card); box-shadow: 0 8px 24px rgba(0,0,0,.28); border-radius: 12px; transition: none; }
+  .editrow { flex-direction: column; align-items: stretch; gap: 8px; padding: 12px 16px; }
+  .note-in { width: 100%; font: 15px/1.4 -apple-system, system-ui, sans-serif; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; resize: none; text-transform: none; -webkit-user-select: text; user-select: text; }
+  body.caps textarea.note-in { text-transform: none; }
+  .item .body { flex: 1; min-width: 0; }
+  .item .note { color: var(--muted); font-size: 14px; line-height: 1.35; margin-top: 3px; white-space: pre-wrap; overflow-wrap: anywhere; text-transform: none; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 24px; }
+
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid var(--line); z-index: 3; }
+  .primary { width: 100%; padding: 13px; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+
+  .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 10; display: none; }
+  .backdrop.open { display: block; }
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; max-height: 82vh; overflow: auto; background: var(--card); border-radius: 18px 18px 0 0; padding: 14px 16px calc(18px + env(safe-area-inset-bottom)); z-index: 11; display: none; }
+  .sheet.open { display: block; }
+  .sheet h3 { margin: 4px 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .lrow { display: flex; align-items: center; justify-content: space-between; min-height: 50px; padding: 6px 4px; border-bottom: 1px solid var(--line); background: var(--card); transition: transform .15s; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .lrow.cur { font-weight: 700; color: var(--accent); }
+  .lrow small { color: var(--muted); font-weight: 400; }
+  .btns { display: flex; gap: 8px; margin-top: 14px; }
+  .btns button { flex: 1; padding: 11px 6px; border: 1px solid var(--line); border-radius: 10px; }
+  .btns .danger { color: var(--danger); }
+  .inline { display: flex; gap: 8px; margin-top: 10px; }
+  .inline[hidden] { display: none; }
+  .inline input { flex: 1; min-width: 0; font: inherit; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+  .inline button { padding: 10px 16px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .hint { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+  /* "All capitals": the whole page displays in capitals, like the watch.
+     The export text is capitals too. */
+  body.caps, body.caps input, body.caps button, body.caps select { text-transform: uppercase; }
+  body.caps textarea { text-transform: none; }
+  .set { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .set input[type=checkbox] { width: 24px; height: 24px; accent-color: var(--accent); }
+  .seg { display: flex; gap: 6px; }
+  .seg button { padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; }
+  .seg button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  select, textarea, .field { width: 100%; font: inherit; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; margin-top: 8px; }
+  textarea { min-height: 110px; font: 13px/1.4 ui-monospace, Menlo, monospace; }
+  .toast { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 20px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <button id="title"></button>
+  <button id="menu" aria-label="Settings and export">⋯</button>
+</header>
+<div class="count" id="count"></div>
+
+<main id="main">
+  <div id="pull"><span id="pullTxt">Pull down to add</span></div>
+  <div id="items"></div>
+  <div class="empty" id="emptyHint" hidden>Nothing here yet.<br>Pull down to add an item.</div>
+</main>
+
+<div class="bar"><button id="save" class="primary">Send to watch</button></div>
+
+<div class="backdrop" id="backdrop"></div>
+
+<!-- Lists sheet -->
+<div class="sheet" id="sheetLists">
+  <h3>Lists</h3>
+  <div id="lrows"></div>
+  <p class="hint">Tap to open · hold and drag to reorder</p>
+  <div class="btns">
+    <button id="lNew">New list</button>
+    <button id="lRename">Rename</button>
+    <button id="lDelete" class="danger">Delete</button>
+  </div>
+  <div class="inline" id="lInline" hidden>
+    <input type="text" id="lInput" maxlength="23" enterkeyhint="done">
+    <button id="lOk">OK</button>
+  </div>
+</div>
+
+<!-- Settings + export sheet -->
+<div class="sheet" id="sheetMenu">
+  <h3>Watch display</h3>
+  <div class="set"><span>Text size</span>
+    <div class="seg" id="font"><button data-v="0">Small</button><button data-v="1">Medium</button><button data-v="2">Large</button></div>
+  </div>
+
+  <h3 style="margin-top:18px">Export for Notes</h3>
+  <select id="fmt">
+    <option value="sym">Plain text (☐ / ☑)</option>
+    <option value="md">Markdown checklist</option>
+  </select>
+  <label class="hint" style="display:block"><input type="checkbox" id="onlyOpen"> Only items not lined through</label>
+  <label class="hint" style="display:block"><input type="checkbox" id="withNotes" checked> Include notes</label>
+  <input type="text" class="field" id="shortcut" placeholder="Shortcut name" value="Save to Notes">
+  <div class="btns">
+    <button id="runShortcut">Run Shortcut</button>
+    <button id="share">Share…</button>
+  </div>
+  <div class="btns">
+    <button id="copy">Copy</button>
+    <button id="download">Download .md</button>
+  </div>
+  <textarea id="preview" readonly></textarea>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  var MAX_LISTS = 6, MAX_ITEMS = 20, TEXT_LEN = 63, NAME_LEN = 23, NOTE_LEN = 1000;
+  var LS = 'pebblelist_page_v1';
+  var fromApp = false;
+
+  var state;
+  (function init() {
+    var h = location.hash.slice(1);
+    if (h) { try { state = JSON.parse(decodeURIComponent(h)); fromApp = true; } catch (e) {} }
+    if (!state) { try { state = JSON.parse(localStorage.getItem(LS)); } catch (e) {} }
+    if (!state || !state.lists || !state.lists.length) {
+      state = { upper: true, font: 1, lists: [{ name: 'My list', items: [] }] };
+    }
+  })();
+
+  var cur = 0;                // list currently shown
+  var editing = null;         // { ii, isNew } while an item is being typed
+  var activeCommit = null;    // saves the item being edited right now (used before sending)
+  var $ = function (id) { return document.getElementById(id); };
+  var list = function () { return state.lists[cur]; };
+
+  function persist() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (e) {} }
+  function cleanNote(s) { return String(s || '').replace(/\r/g, '').trim().substring(0, NOTE_LEN); }
+  function clean(s) { return String(s || '').replace(/\s+/g, ' ').trim().substring(0, TEXT_LEN); }
+  function toast(msg) {
+    var t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('show'); }, 1800);
+  }
+  function buzz() { try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} }
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+
+  // =========================================================================
+  // Gesture engine (touch + mouse). One instance per container.
+  //   tap          -> cfg.onTap(row, target)
+  //   hold + drag  -> reorder; cfg.onReorder(newOrderOfDataIndexes)
+  //   swipe sideways on a row -> cfg.onSwipe(row)           (optional)
+  //   pull down at top of page -> cfg.onPull()               (optional)
+  // =========================================================================
+  var lastTouch = 0;
+
+  function attachGestures(container, cfg) {
+    var g = null;
+
+    function rows() { return Array.prototype.slice.call(container.querySelectorAll(cfg.rowSel)); }
+
+    function start(x, y, target) {
+      if (cfg.blocked && cfg.blocked()) return;
+      var row = target.closest ? target.closest(cfg.rowSel) : null;
+      if (row && !container.contains(row)) row = null;
+      g = { x: x, y: y, cy: y, row: row, target: target, t0: Date.now(), mode: 'pending', dx: 0, dy: 0, timer: null };
+      if (row && cfg.onReorder) g.timer = setTimeout(function () { if (g && g.mode === 'pending') beginDrag(); }, 380);
+    }
+
+    function move(x, y, ev) {
+      if (!g) return;
+      g.cy = y; g.dx = x - g.x; g.dy = y - g.y;
+      if (g.mode === 'pending') {
+        var ax = Math.abs(g.dx), ay = Math.abs(g.dy);
+        if (ax < 9 && ay < 9) return;
+        clearTimeout(g.timer);
+        if (g.row && cfg.onSwipe && ax > ay * 1.3) g.mode = 'swipe';
+        else if (cfg.onPull && g.dy > 0 && ay > ax && window.scrollY <= 0) g.mode = 'pull';
+        else { g.mode = 'scroll'; return; }
+      }
+      if (g.mode === 'swipe') {
+        if (ev.cancelable) ev.preventDefault();
+        var d = Math.max(-110, Math.min(110, g.dx));
+        g.row.style.transition = 'none';
+        g.row.style.transform = 'translateX(' + d + 'px)';
+        var past = Math.abs(g.dx) >= 60;
+        var wasDone = g.row.classList.contains('done');
+        g.row.classList.toggle('strike', past && g.dx > 0 && !wasDone);      // swipe right: line through
+        g.row.classList.toggle('unstrike', past && g.dx > 0 && wasDone);
+        g.row.classList.toggle('deleting', past && g.dx < 0);                // swipe left: delete
+      } else if (g.mode === 'pull') {
+        if (ev.cancelable) ev.preventDefault();
+        var h = Math.min(g.dy * 0.6, 80);
+        $('pull').style.height = h + 'px';
+        $('pullTxt').textContent = g.dy >= 80 ? 'Release to add' : 'Pull down to add';
+      } else if (g.mode === 'drag') {
+        if (ev.cancelable) ev.preventDefault();
+        dragApply();
+      }
+    }
+
+    function end(ev) {
+      if (!g) return;
+      var s = g; g = null;
+      clearTimeout(s.timer);
+      var handled = false;
+      if (s.mode === 'swipe') {
+        s.row.style.transition = ''; s.row.style.transform = '';
+        s.row.classList.remove('strike', 'unstrike', 'deleting');
+        if (Math.abs(s.dx) >= 60) cfg.onSwipe(s.row, s.dx > 0 ? 1 : -1);
+        handled = true;
+      } else if (s.mode === 'pull') {
+        $('pull').style.height = '0px';
+        if (s.dy >= 80) cfg.onPull();
+        handled = true;
+      } else if (s.mode === 'drag') {
+        clearInterval(s.scroller);
+        s.row.classList.remove('dragging');
+        s.row.style.transform = '';
+        var order = rows().map(function (r) { return +r.getAttribute('data-i'); });
+        cfg.onReorder(order);
+        handled = true;
+      } else if (s.mode === 'pending' && s.row && Date.now() - s.t0 < 380) {
+        cfg.onTap(s.row, s.target);
+        handled = true;
+      }
+      if (handled && ev && ev.cancelable && ev.preventDefault) ev.preventDefault();
+    }
+
+    function beginDrag() {
+      g.mode = 'drag';
+      g.startPageY = g.cy + window.scrollY;
+      g.row.classList.add('dragging');
+      buzz();
+      g.scroller = setInterval(function () {
+        var y = g.cy, h = window.innerHeight;
+        if (y < 110) { window.scrollBy(0, -12); dragApply(); }
+        else if (y > h - 160) { window.scrollBy(0, 12); dragApply(); }
+      }, 16);
+      dragApply();
+    }
+
+    function dragApply() {
+      var row = g.row;
+      var pageY = g.cy + window.scrollY;
+      row.style.transform = 'translateY(' + (pageY - g.startPageY) + 'px)';
+      var r = row.getBoundingClientRect();
+      var centre = r.top + r.height / 2;
+      var sibs = rows();
+      for (var k = 0; k < sibs.length; k++) {
+        var s = sibs[k];
+        if (s === row) continue;
+        var sr = s.getBoundingClientRect();
+        var mid = sr.top + sr.height / 2;
+        var follows = !!(row.compareDocumentPosition(s) & Node.DOCUMENT_POSITION_FOLLOWING);
+        var before = row.getBoundingClientRect().top;
+        if (follows && centre > mid) s.parentNode.insertBefore(row, s.nextSibling);
+        else if (!follows && centre < mid) s.parentNode.insertBefore(row, s);
+        else continue;
+        g.startPageY += row.getBoundingClientRect().top - before;
+        row.style.transform = 'translateY(' + (pageY - g.startPageY) + 'px)';
+        buzz();
+        break;
+      }
+    }
+
+    // touch
+    container.addEventListener('touchstart', function (e) {
+      lastTouch = Date.now();
+      if (e.touches.length !== 1) { g = null; return; }
+      start(e.touches[0].clientX, e.touches[0].clientY, e.target);
+    }, { passive: true });
+    container.addEventListener('touchmove', function (e) {
+      if (e.touches.length === 1) move(e.touches[0].clientX, e.touches[0].clientY, e);
+    }, { passive: false });
+    container.addEventListener('touchend', function (e) { lastTouch = Date.now(); end(e); }, { passive: false });
+    container.addEventListener('touchcancel', function () {
+      if (g) { clearTimeout(g.timer); clearInterval(g.scroller); if (g.row) { g.row.classList.remove('dragging'); g.row.style.transform = ''; } }
+      $('pull').style.height = '0px';
+      g = null;
+      render();
+    });
+    // mouse (desktop testing)
+    container.addEventListener('mousedown', function (e) {
+      if (Date.now() - lastTouch < 700 || e.button !== 0) return;
+      start(e.clientX, e.clientY, e.target);
+    });
+    window.addEventListener('mousemove', function (e) {
+      if (g && Date.now() - lastTouch >= 700) move(e.clientX, e.clientY, e);
+    });
+    window.addEventListener('mouseup', function (e) {
+      if (g && Date.now() - lastTouch >= 700) end(e);
+    });
+  }
+
+  // =========================================================================
+  // Items
+  // =========================================================================
+  function render() {
+    state.upper = true;                       // capitals are always on
+    document.body.classList.add('caps');
+    var l = list();
+    $('title').textContent = '';
+    $('title').appendChild(document.createTextNode(l.name + ' '));
+    $('title').appendChild(el('span', '', '▾'));
+    var open = l.items.filter(function (i) { return !i.d; }).length;
+    $('count').textContent = open + ' on the watch · ' + (l.items.length - open) + ' lined out (hidden) · ' + l.items.length + '/' + MAX_ITEMS;
+
+    var root = $('items'); root.innerHTML = '';
+    function newRow(at) {
+      var row = el('div', 'newrow');
+      var inp = el('input', 'edit');
+      inp.type = 'text'; inp.maxLength = TEXT_LEN; inp.placeholder = 'New item'; inp.setAttribute('enterkeyhint', 'next');
+      wireInput(inp, at, true);
+      row.appendChild(inp);
+      root.appendChild(row);
+    }
+    if (editing && editing.isNew && editing.ii === 0) newRow(0);
+    l.items.forEach(function (it, ii) {
+      if (editing && !editing.isNew && editing.ii === ii) {
+        var er = el('div', 'newrow editrow');
+        var inp = el('input', 'edit');
+        inp.type = 'text'; inp.maxLength = TEXT_LEN; inp.value = it.t; inp.setAttribute('enterkeyhint', 'done');
+        var note = el('textarea', 'note-in');
+        note.rows = 3; note.maxLength = NOTE_LEN; note.value = it.n || '';
+        note.placeholder = 'Note (kept on the phone only, never shown on the watch)';
+        wireEdit(er, inp, note, ii);
+        er.appendChild(inp);
+        er.appendChild(note);
+        root.appendChild(er);
+      } else {
+        var row = el('div', 'item' + (it.d ? ' done' : ''));
+        row.setAttribute('data-i', ii);
+        var body = el('div', 'body');
+        body.appendChild(el('div', 'txt', it.t));
+        if (it.n) body.appendChild(el('div', 'note', it.n));    // shown here on the phone only; never sent to the watch
+        row.appendChild(body);
+        root.appendChild(row);
+      }
+      if (editing && editing.isNew && editing.ii === ii + 1) newRow(ii + 1);
+    });
+    $('emptyHint').hidden = !(l.items.length === 0 && !editing);
+    preview();
+    persist();
+  }
+
+  // A new item: just the text field. Return adds it and opens the next one.
+  function wireInput(inp, ii) {
+  var done = false;
+
+  activeCommit = function () {
+    finish(false);
+  };
+
+  function buildAircraftList(v) {
+    var tokens = v.split(/\s+/).filter(function (t) {
+      return t.length > 0;
+    });
+
+    // Need at least:
+    // 30xx + LOCATION
+    if (tokens.length < 2 || !/^30\d{2}$/.test(tokens[0])) {
+      return false;
+    }
+
+    var tail = tokens[0];
+    var location = tokens[1];
+
+    // Everything after the tail + location becomes tasks.
+    var taskTokens = tokens.slice(2);
+    var tasks = [];
+
+    for (var i = 0; i < taskTokens.length; i++) {
+      var token = taskTokens[i];
+
+      // TOW is always a two-word task.
+      // Supports:
+      //   TOW M4D
+      //   TOW/M4D
+      //   TOW-M4D
+      if (token.toUpperCase() === 'TOW') {
+        if (i + 1 < taskTokens.length) {
+          var next = taskTokens[++i];
+
+          next = next
+            .replace(/^[\/-]+/, '')
+            .replace(/[\/-]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+          if (next) {
+            tasks.push(clean('TOW ' + next));
+          }
+        } else {
+          tasks.push('TOW');
+        }
+
+        continue;
+      }
+
+      // TOW/M4D or TOW-M4D
+      if (/^TOW[\/-]/i.test(token)) {
+        var towTask = token
+          .replace(/^TOW[\/-]+/i, '')
+          .replace(/[\/-]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        if (towTask) {
+          tasks.push(clean('TOW ' + towTask));
+        } else {
+          tasks.push('TOW');
+        }
+
+        continue;
+      }
+
+      // / and - join words into a single task.
+      token = token
+        .replace(/[\/-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (token) {
+        tasks.push(clean(token));
+      }
+
+      if (tasks.length >= MAX_ITEMS) break;
+    }
+
+    // Do not create more than the watch can hold.
+    if (state.lists.length >= MAX_LISTS) {
+      toast('Maximum ' + MAX_LISTS + ' lists');
+      return true;
+    }
+
+    var newList = {
+      name: clean(tail + ' ' + location).substring(0, NAME_LEN),
+      items: []
+    };
+
+    tasks.forEach(function (task) {
+      if (task && newList.items.length < MAX_ITEMS) {
+        newList.items.push({
+          t: task,
+          d: false
+        });
+      }
+    });
+
+    state.lists.push(newList);
+
+    // Open the newly-created aircraft list immediately.
+    cur = state.lists.length - 1;
+
+    return true;
+  }
+
+  function finish(next) {
+    if (done) return;
+    done = true;
+    activeCommit = null;
+
+    var v = clean(inp.value);
+
+    // Special aircraft-list parser.
+    //
+    // Example:
+    // 3030 SP1 TOW/M4D REFUEL DEFUEL TOW/FUELS CHARTA
+    //
+    // becomes:
+    // 3030 SP1
+    //   TOW M4D
+    //   REFUEL
+    //   DEFUEL
+    //   TOW FUELS
+    //   CHARTA
+    if (v && /^30\d{2}(?:\s|$)/.test(v)) {
+      editing = null;
+
+      if (buildAircraftList(v)) {
+        persist();
+        render();
+        return;
+      }
+    }
+
+    // Normal item behavior remains unchanged.
+    var items = list().items;
+    editing = null;
+
+    if (v) {
+      items.splice(ii, 0, { t: v, d: false });
+
+      if (next && items.length < MAX_ITEMS) {
+        editing = { ii: ii + 1, isNew: true };
+      } else if (next) {
+        toast('List is full (' + MAX_ITEMS + ')');
+      }
+    }
+
+    render();
+
+    if (editing) focusEdit();
+  }
+
+  inp.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      finish(true);
+    } else if (e.key === 'Escape') {
+      inp.value = '';
+      finish(false);
+    }
+  });
+
+  inp.addEventListener('blur', function () {
+    finish(false);
+  });
+}
+
+  // An existing item: the text plus its note. Saves when focus leaves both fields.
+  function wireEdit(row, inp, note, ii) {
+    var done = false;
+    activeCommit = function () { finish(); };
+    function finish() {
+      if (done) return; done = true; activeCommit = null;
+      var v = clean(inp.value), n = cleanNote(note.value);
+      var items = list().items;
+      editing = null;
+      if (!v) items.splice(ii, 1);              // clearing the text deletes the item (and its note)
+      else {
+        items[ii].t = v;
+        if (n) items[ii].n = n; else delete items[ii].n;
+      }
+      render();
+    }
+    row.addEventListener('focusout', function () {
+      setTimeout(function () { if (!row.contains(document.activeElement)) finish(); }, 0);
+    });
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); finish(); }
+      else if (e.key === 'Escape') {
+        var cur = list().items[ii] || {};
+        inp.value = cur.t || ''; note.value = cur.n || ''; finish();
+      }
+    });
+  }
+
+  function focusEdit() {
+    var i = $('items').querySelector('input.edit');
+    if (i) { i.focus(); var n = i.value.length; try { i.setSelectionRange(n, n); } catch (e) {} }
+  }
+
+  function addAtTop() {
+    if (list().items.length >= MAX_ITEMS) { toast('List is full (' + MAX_ITEMS + ')'); return; }
+    editing = { ii: 0, isNew: true };
+    render(); focusEdit();
+    window.scrollTo(0, 0);
+  }
+
+  attachGestures($('main'), {
+    rowSel: '#items .item',
+    blocked: function () { return !!editing || sheetOpen(); },
+    onTap: function (row, target) {
+      var ii = +row.getAttribute('data-i');
+      editing = { ii: ii, isNew: false };
+      render(); focusEdit();
+    },
+    onSwipe: function (row, dir) {
+      var ii = +row.getAttribute('data-i');
+      if (dir > 0) list().items[ii].d = !list().items[ii].d;   // right: line through / undo
+      else list().items.splice(ii, 1);                          // left: delete
+      buzz(); render();
+    },
+    onPull: addAtTop,
+    onReorder: function (order) {
+      var items = list().items;
+      list().items = order.map(function (i) { return items[i]; });
+      render();
+    }
+  });
+
+  // =========================================================================
+  // Lists sheet
+  // =========================================================================
+  var inlineMode = null;
+  function sheetOpen() { return $('sheetLists').classList.contains('open') || $('sheetMenu').classList.contains('open'); }
+  function openSheet(id) {
+    $('backdrop').classList.add('open'); $(id).classList.add('open');
+    if (id === 'sheetLists') renderLists();
+    if (id === 'sheetMenu') renderMenu();
+  }
+  function closeSheets() {
+    $('backdrop').classList.remove('open');
+    $('sheetLists').classList.remove('open'); $('sheetMenu').classList.remove('open');
+    $('lInline').hidden = true; inlineMode = null; resetDelete();
+    render();
+  }
+  $('backdrop').addEventListener('click', closeSheets);
+  $('title').addEventListener('click', function () { if (!editing) openSheet('sheetLists'); });
+  $('menu').addEventListener('click', function () { if (!editing) openSheet('sheetMenu'); });
+
+  function renderLists() {
+    var root = $('lrows'); root.innerHTML = '';
+    state.lists.forEach(function (l, i) {
+      var r = el('div', 'lrow' + (i === cur ? ' cur' : ''));
+      r.setAttribute('data-i', i);
+      r.appendChild(el('span', '', l.name));
+      r.appendChild(el('small', '', String(l.items.length)));
+      root.appendChild(r);
+    });
+    $('lNew').disabled = state.lists.length >= MAX_LISTS;
+  }
+
+  attachGestures($('lrows'), {
+    rowSel: '.lrow',
+    onTap: function (row) { cur = +row.getAttribute('data-i'); closeSheets(); },
+    onReorder: function (order) {
+      var curList = list();
+      state.lists = order.map(function (i) { return state.lists[i]; });
+      cur = state.lists.indexOf(curList);
+      renderLists(); persist();
+    }
+  });
+
+  function showInline(mode, value) {
+    inlineMode = mode;
+    $('lInline').hidden = false;
+    $('lInput').value = value; $('lInput').focus(); $('lInput').select();
+  }
+  $('lNew').addEventListener('click', function () { if (state.lists.length < MAX_LISTS) showInline('new', ''); });
+  $('lRename').addEventListener('click', function () { showInline('rename', list().name); });
+  function applyInline() {
+    var v = String($('lInput').value || '').replace(/\s+/g, ' ').trim().substring(0, NAME_LEN);
+    if (!v) { $('lInline').hidden = true; inlineMode = null; return; }
+    if (inlineMode === 'new') { state.lists.push({ name: v, items: [] }); cur = state.lists.length - 1; closeSheets(); return; }
+    if (inlineMode === 'rename') { list().name = v; }
+    $('lInline').hidden = true; inlineMode = null; renderLists(); render();
+  }
+  $('lOk').addEventListener('click', applyInline);
+  $('lInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); applyInline(); } });
+
+  var delArmed = false;
+  function resetDelete() { delArmed = false; $('lDelete').textContent = 'Delete'; }
+  $('lDelete').addEventListener('click', function () {
+    if (!delArmed) {
+      delArmed = true; $('lDelete').textContent = 'Tap again';
+      setTimeout(resetDelete, 3000); return;
+    }
+    state.lists.splice(cur, 1);
+    if (!state.lists.length) state.lists.push({ name: 'My list', items: [] });
+    cur = Math.min(cur, state.lists.length - 1);
+    resetDelete(); renderLists(); render();
+  });
+
+  // =========================================================================
+  // Settings + export
+  // =========================================================================
+  function renderMenu() {
+    Array.prototype.forEach.call($('font').children, function (b) { b.classList.toggle('on', +b.dataset.v === +state.font); });
+    preview();
+  }
+  $('font').addEventListener('click', function (e) {
+    if (e.target.dataset.v === undefined) return;
+    state.font = +e.target.dataset.v; renderMenu(); persist();
+  });
+
+  function exportText() {
+    var fmt = $('fmt').value, onlyOpen = $('onlyOpen').checked, withNotes = $('withNotes').checked, out = [];
+    var U = function (s) { return String(s).toUpperCase(); };   // lists and items in capitals; notes as typed
+    state.lists.forEach(function (l) {
+      var items = l.items.filter(function (i) { return i.t.trim() && (!onlyOpen || !i.d); });
+      if (!items.length) return;
+      out.push(fmt === 'md' ? '## ' + U(l.name) : U(l.name));
+      items.forEach(function (i) {
+        out.push(fmt === 'md' ? '- [' + (i.d ? 'X' : ' ') + '] ' + U(i.t) : (i.d ? '☑ ' : '☐ ') + U(i.t));
+        if (withNotes && i.n) i.n.split('\n').forEach(function (ln) { out.push((fmt === 'md' ? '  > ' : '    ') + ln); });
+      });
+      out.push('');
+    });
+    return out.join('\n').trim();
+  }
+  function preview() { $('preview').value = exportText(); }
+  $('fmt').addEventListener('change', preview);
+  $('onlyOpen').addEventListener('change', preview);
+  $('withNotes').addEventListener('change', preview);
+
+  $('copy').addEventListener('click', function () {
+    var t = exportText();
+    function fallback() { $('preview').select(); try { document.execCommand('copy'); } catch (e) {} toast('Copied'); }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { toast('Copied'); }, fallback);
+    else fallback();
+  });
+  $('share').addEventListener('click', function () {
+    if (navigator.share) navigator.share({ title: 'Lists', text: exportText() }).catch(function () {});
+    else toast('Share is not available here – use Copy');
+  });
+  $('download').addEventListener('click', function () {
+    var a = el('a'); a.href = URL.createObjectURL(new Blob([exportText()], { type: 'text/markdown' })); a.download = 'lists.md';
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+  $('runShortcut').addEventListener('click', function () {
+    var name = $('shortcut').value.trim();
+    if (!name) { toast('Enter the Shortcut name'); return; }
+    try { localStorage.setItem('pebblelist_shortcut', name); } catch (e) {}
+    location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent(name) + '&input=text&text=' + encodeURIComponent(exportText());
+  });
+  try { var sn = localStorage.getItem('pebblelist_shortcut'); if (sn) $('shortcut').value = sn; } catch (e) {}
+
+  // =========================================================================
+  // Send to watch
+  // =========================================================================
+  $('save').addEventListener('click', function () {
+    if (activeCommit) activeCommit();             // save an item that is still being edited
+    state.lists.forEach(function (l) {
+      l.name = (l.name || 'List').trim().substring(0, NAME_LEN) || 'List';
+      l.items = l.items.filter(function (i) { return i.t && i.t.trim(); });
+    });
+    persist();
+    if (!fromApp) { toast('Open this page from the Pebble app\'s settings to send it'); return; }
+    var q = new URLSearchParams(location.search).get('return_to');
+    location.href = (q || 'pebblejs://close#') + encodeURIComponent(JSON.stringify(state));
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
