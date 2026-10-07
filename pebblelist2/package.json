@@ -1,0 +1,20 @@
+{
+  "name": "pebblelist",
+  "author": "you",
+  "version": "1.3.0",
+  "keywords": ["pebble-app"],
+  "private": true,
+  "dependencies": {},
+  "pebble": {
+    "displayName": "Lists",
+    "uuid": "6f1f3c52-7a0e-4a77-9a55-1c2d9b8e4a10",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": ["emery", "basalt", "diorite"],
+    "watchapp": { "watchface": false },
+    "capabilities": ["configurable"],
+    "projectType": "native",
+    "messageKeys": ["CMD", "LIST", "ITEM", "TEXT", "DONE", "UPPER", "FONT"],
+    "resources": { "media": [] }
+  }
+}
