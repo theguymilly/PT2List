@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Pebble Lists</title>
+<style>
+  :root { --bg:#f6f6f4; --card:#fff; --ink:#1b1b1b; --muted:#8a8a86; --line:#e4e4e0; --accent:#e8590c; --accent-ink:#fff; --danger:#c92a2a; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0e0e0e; --card:#1b1b1b; --ink:#f2f2f0; --muted:#8d8d89; --line:#2d2d2d; --accent:#ff7a2f; --accent-ink:#111; --danger:#ff6b6b; }
+  }
+  html { touch-action:manipulation; -webkit-text-size-adjust:100%; overscroll-behavior:none; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { margin:0; background:var(--bg); color:var(--ink); font:17px/1.35 -apple-system, system-ui, sans-serif; }
+  body { padding-bottom:0; }
+  button { font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; }
+  header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px 6px; position:sticky; top:0; background:var(--bg); z-index:3; }
+  #title { font-size:26px; font-weight:700; max-width:80%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #title span { color:var(--muted); font-size:16px; font-weight:500; }
+  #menu { font-size:26px; line-height:1; padding:4px 8px; color:var(--muted); }
+  .count { padding:0 16px 6px calc(20% + 12px); color:var(--muted); font-size:13px; }
+  main { min-height:calc(100vh - 160px); position:relative; touch-action:pan-y; }
+  #pull { overflow:hidden; height:0; text-align:center; color:var(--muted); font-size:14px; display:flex; align-items:flex-end; justify-content:center; }
+  #pull span { padding-bottom:8px; }
+  .item, .newrow { display:flex; align-items:center; min-height:54px; padding:8px 16px; border-bottom:1px solid var(--line); background:var(--bg); position:relative; transition:transform .15s; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  .txt { flex:1; min-width:0; overflow-wrap:anywhere; }
+  .item.done .txt, .item.strike .txt { text-decoration:line-through; color:var(--muted); }
+  .item.unstrike .txt { text-decoration:none; color:var(--ink); }
+  .item.deleting .txt { color:var(--danger); text-decoration:none; }
+  .edit { flex:1; min-width:0; font:inherit; color:var(--ink); background:transparent; border:0; outline:0; padding:0; -webkit-user-select:text; user-select:text; }
+  .dragging { z-index:4; background:var(--card); box-shadow:0 8px 24px rgba(0,0,0,.28); border-radius:12px; transition:none; }
+  .editrow { flex-direction:column; align-items:stretch; gap:8px; padding:12px 16px; }
+  .note-in { width:100%; font:16px/1.4 -apple-system, system-ui, sans-serif; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:10px; padding:8px 10px; resize:none; text-transform:none; -webkit-user-select:text; user-select:text; }
+  body.caps textarea.note-in { text-transform:none; }
+  .item .body { flex:1; min-width:0; }
+  .item .note { color:var(--muted); font-size:14px; line-height:1.35; margin-top:3px; white-space:pre-wrap; overflow-wrap:anywhere; text-transform:none; }
+  .empty { text-align:center; color:var(--muted); padding:40px 24px; }
+  .sendwrap { padding:28px 16px calc(24px + env(safe-area-inset-bottom)); }
+  .primary { width:100%; padding:13px; border-radius:12px; background:var(--accent); color:var(--accent-ink); font-weight:600; }
+  .backdrop { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:10; display:none; }
+  .backdrop.open { display:block; }
+  .sheet { position:fixed; left:0; right:0; bottom:0; max-height:82vh; overflow:auto; background:var(--card); border-radius:18px 18px 0 0; padding:14px 16px calc(18px + env(safe-area-inset-bottom)); z-index:11; display:none; }
+  .sheet.open { display:block; }
+  .sheet h3 { margin:4px 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+  .lrow { display:flex; align-items:center; justify-content:space-between; min-height:50px; padding:6px 4px; border-bottom:1px solid var(--line); background:var(--card); transition:transform .15s; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  .lrow.cur { font-weight:700; color:var(--accent); }
+  .lrow small { color:var(--muted); font-weight:400; }
+  .btns { display:flex; gap:8px; margin-top:14px; }
+  .btns button { flex:1; padding:11px 6px; border:1px solid var(--line); border-radius:10px; }
+  .btns .danger { color:var(--danger); }
+  .inline { display:flex; gap:8px; margin-top:10px; }
+  .inline[hidden] { display:none; }
+  .inline input { flex:1; min-width:0; font:inherit; color:var(--ink); background:transparent; border:1px solid var(--line); border-radius:10px; padding:10px; }
+  .inline button { padding:10px 16px; border-radius:10px; background:var(--accent); color:var(--accent-ink); font-weight:600; }
+  .hint { color:var(--muted); font-size:13px; margin:8px 0 0; }
+  body.caps, body.caps input, body.caps button, body.caps select { text-transform:uppercase; }
+  body.caps textarea { text-transform:none; }
+  .set { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); }
+  .seg { display:flex; gap:6px; }
+  .seg button { padding:8px 12px; border:1px solid var(--line); border-radius:9px; }
+  .seg button.on { background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  select, textarea, .field { width:100%; font:inherit; color:var(--ink); background:transparent; border:1px solid var(--line); border-radius:10px; padding:9px 10px; margin-top:8px; }
+  textarea { min-height:110px; font:16px/1.4 ui-monospace, Menlo, monospace; }
+  .toast { position:fixed; top:12px; left:50%; transform:translateX(-50%); background:var(--ink); color:var(--bg); padding:8px 14px; border-radius:20px; font-size:14px; opacity:0; transition:opacity .2s; pointer-events:none; z-index:20; }
+  .toast.show { opacity:1; }
+
+  /* Phone split list view */
+  #phoneLists { position:fixed; left:0; top:58px; bottom:0; width:20%; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--card); border-right:1px solid var(--line); z-index:5; padding-bottom:8px; }
+  .phone-list-row { position:relative; min-height:46px; overflow:hidden; border-bottom:1px solid var(--line); background:var(--card); -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; touch-action:pan-y; }
+  .phone-list-content { position:relative; z-index:2; min-height:46px; padding:7px 6px; background:var(--card); display:flex; align-items:center; gap:5px; will-change:transform; }
+  .plist-name { flex:1; min-width:0; font-size:13px; font-weight:600; line-height:1.15; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .plist-count { flex:0 0 auto; color:var(--muted); font-size:10px; line-height:1; white-space:nowrap; }
+  .phone-list-row.cur .phone-list-content { background:var(--accent); color:var(--accent-ink); }
+  .phone-list-row.cur .plist-count { color:var(--accent-ink); opacity:.8; }
+  .phone-list-row.dragging-list { z-index:20; opacity:.9; box-shadow:0 4px 14px rgba(0,0,0,.25); border-radius:8px; }
+  .phone-list-row.drop-up { box-shadow:inset 0 3px 0 var(--accent); }
+  .phone-list-row.drop-down { box-shadow:inset 0 -3px 0 var(--accent); }
+  .phone-list-delete { position:absolute; z-index:1; top:0; right:0; bottom:0; width:72px; border:0; margin:0; padding:0; background:#ff3b30; color:#fff; font-size:12px; font-weight:700; text-align:center; }
+  #phoneContent { margin-left:20%; min-width:0; }
+  @media (min-width:800px) {
+    #phoneLists { width:220px; }
+    #phoneContent { margin-left:220px; }
+    .count { padding-left:232px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <button id="title"></button>
+  <button id="menu" aria-label="Settings and export">⋯</button>
+</header>
+<div class="count" id="count"></div>
+
+<div id="phoneLists"></div>
+
+<div id="phoneContent">
+  <main id="main">
+    <div id="pull"><span id="pullTxt">Pull down to add</span></div>
+    <div id="items"></div>
+    <div class="empty" id="emptyHint" hidden>Nothing here yet.<br>Pull down to add an item.</div>
+    <div class="sendwrap"><button id="save" class="primary">Send to watch</button></div>
+  </main>
+</div>
+
+<div class="backdrop" id="backdrop"></div>
+
+<div class="sheet" id="sheetLists">
+  <h3>Lists</h3>
+  <div id="lrows"></div>
+  <p class="hint">Tap to open · hold and drag to reorder</p>
+  <div class="btns">
+    <button id="lNew">New list</button>
+    <button id="lRename">Rename</button>
+    <button id="lDelete" class="danger">Delete</button>
+  </div>
+  <div class="inline" id="lInline" hidden>
+    <input type="text" id="lInput" maxlength="23" enterkeyhint="done">
+    <button id="lOk">OK</button>
+  </div>
+</div>
+
+<div class="sheet" id="sheetMenu">
+  <h3>Watch display</h3>
+  <div class="set"><span>Text size</span>
+    <div class="seg" id="font"><button data-v="0">Small</button><button data-v="1">Medium</button><button data-v="2">Large</button></div>
+  </div>
+  <h3 style="margin-top:18px">Export for Notes</h3>
+  <select id="fmt">
+    <option value="list">List only (items checked off)</option>
+    <option value="check">Checklist with boxes (☐ to do / ☑ done)</option>
+  </select>
+  <label class="hint" style="display:block"><input type="checkbox" id="autoSend" checked> Send to watch automatically when I leave this page</label>
+  <label class="hint" style="display:block"><input type="checkbox" id="withNotes" checked> Include notes</label>
+  <div class="btns"><button id="share">Share…</button></div>
+  <div class="btns"><button id="copy">Copy</button><button id="download">Download .txt</button></div>
+  <textarea id="preview" readonly></textarea>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  var MAX_LISTS = 10, MAX_ITEMS = 20, TEXT_LEN = 63, NAME_LEN = 23, NOTE_LEN = 1000, AC_LEN = 300;
+  var AC_RE = /^30\d{2}(?:\s|$)/;          // aircraft quick-list: "3030 SP1 TOW/M4D REFUEL ..."
+  var LS = 'pebblelist_page_v1';
+  var fromApp = false;
+
+  var state;
+  (function init() {
+    var h = location.hash.slice(1);
+    if (h) { try { state = JSON.parse(decodeURIComponent(h)); fromApp = true; } catch (e) {} }
+    if (!state) { try { state = JSON.parse(localStorage.getItem(LS)); } catch (e) {} }
+    if (!state || !state.lists || !state.lists.length) {
+      state = { upper: true, font: 1, lists: [{ name: 'My list', items: [] }] };
+    }
+  })();
+
+  var cur = 0, editing = null, activeCommit = null;
+  var $ = function (id) { return document.getElementById(id); };
+  var list = function () { return state.lists[cur]; };
+
+  var dirty = false, leaving = false;
+  function persist() { dirty = true; try { localStorage.setItem(LS, JSON.stringify(state)); } catch (e) {} }
+  function cleanNote(s) { return String(s || '').replace(/\r/g, '').trim().substring(0, NOTE_LEN); }
+  function clean(s) { return String(s || '').replace(/\s+/g, ' ').trim().substring(0, TEXT_LEN); }
+  function toast(msg) {
+    var t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('show'); }, 1800);
+  }
+  function buzz() { try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} }
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+
+  // =========================================================================
+  // Gesture engine (touch + mouse). One instance per container.
+  // =========================================================================
+  var lastTouch = 0;
+
+  function attachGestures(container, cfg) {
+    var g = null;
+    function rows() { return Array.prototype.slice.call(container.querySelectorAll(cfg.rowSel)); }
+
+    function start(x, y, target) {
+      if (cfg.blocked && cfg.blocked()) return;
+      var row = target.closest ? target.closest(cfg.rowSel) : null;
+      if (row && !container.contains(row)) row = null;
+      g = { x: x, y: y, cy: y, row: row, target: target, t0: Date.now(), mode: 'pending', dx: 0, dy: 0, timer: null };
+      if (row && cfg.onReorder) g.timer = setTimeout(function () { if (g && g.mode === 'pending') beginDrag(); }, 380);
+    }
+
+    function move(x, y, ev) {
+      if (!g) return;
+      g.cy = y; g.dx = x - g.x; g.dy = y - g.y;
+      if (g.mode === 'pending') {
+        var ax = Math.abs(g.dx), ay = Math.abs(g.dy);
+        if (ax < 9 && ay < 9) return;
+        clearTimeout(g.timer);
+        if (g.row && cfg.onSwipe && ax > ay * 1.3) g.mode = 'swipe';
+        else if (cfg.onPull && g.dy > 0 && ay > ax && window.scrollY <= 0) g.mode = 'pull';
+        else { g.mode = 'scroll'; return; }
+      }
+      if (g.mode === 'swipe') {
+        if (ev.cancelable) ev.preventDefault();
+        var d = Math.max(-110, Math.min(110, g.dx));
+        g.row.style.transition = 'none';
+        g.row.style.transform = 'translateX(' + d + 'px)';
+        var past = Math.abs(g.dx) >= 60, wasDone = g.row.classList.contains('done');
+        g.row.classList.toggle('strike', past && g.dx > 0 && !wasDone);
+        g.row.classList.toggle('unstrike', past && g.dx > 0 && wasDone);
+        g.row.classList.toggle('deleting', past && g.dx < 0);
+      } else if (g.mode === 'pull') {
+        if (ev.cancelable) ev.preventDefault();
+        $('pull').style.height = Math.min(g.dy * 0.6, 80) + 'px';
+        $('pullTxt').textContent = g.dy >= 80 ? 'Release to add' : 'Pull down to add';
+      } else if (g.mode === 'drag') {
+        if (ev.cancelable) ev.preventDefault();
+        dragApply();
+      }
+    }
+
+    function end(ev) {
+      if (!g) return;
+      var s = g; g = null;
+      clearTimeout(s.timer);
+      var handled = false;
+      if (s.mode === 'swipe') {
+        s.row.style.transition = ''; s.row.style.transform = '';
+        s.row.classList.remove('strike', 'unstrike', 'deleting');
+        if (Math.abs(s.dx) >= 60) cfg.onSwipe(s.row, s.dx > 0 ? 1 : -1);
+        handled = true;
+      } else if (s.mode === 'pull') {
+        $('pull').style.height = '0px';
+        if (s.dy >= 80) cfg.onPull();
+        handled = true;
+      } else if (s.mode === 'drag') {
+        clearInterval(s.scroller);
+        s.row.classList.remove('dragging');
+        s.row.style.transform = '';
+        cfg.onReorder(rows().map(function (r) { return +r.getAttribute('data-i'); }));
+        handled = true;
+      } else if (s.mode === 'pending' && s.row && Date.now() - s.t0 < 380) {
+        cfg.onTap(s.row, s.target);
+        handled = true;
+      }
+      if (handled && ev && ev.cancelable && ev.preventDefault) ev.preventDefault();
+    }
+
+    function beginDrag() {
+      g.mode = 'drag';
+      g.startPageY = g.cy + window.scrollY;
+      g.row.classList.add('dragging');
+      buzz();
+      g.scroller = setInterval(function () {
+        var y = g.cy, h = window.innerHeight;
+        if (y < 110) { window.scrollBy(0, -12); dragApply(); }
+        else if (y > h - 160) { window.scrollBy(0, 12); dragApply(); }
+      }, 16);
+      dragApply();
+    }
+
+    function dragApply() {
+      var row = g.row, pageY = g.cy + window.scrollY;
+      row.style.transform = 'translateY(' + (pageY - g.startPageY) + 'px)';
+      var r = row.getBoundingClientRect(), centre = r.top + r.height / 2, sibs = rows();
+      for (var k = 0; k < sibs.length; k++) {
+        var s = sibs[k];
+        if (s === row) continue;
+        var sr = s.getBoundingClientRect(), mid = sr.top + sr.height / 2;
+        var follows = !!(row.compareDocumentPosition(s) & Node.DOCUMENT_POSITION_FOLLOWING);
+        var before = row.getBoundingClientRect().top;
+        if (follows && centre > mid) s.parentNode.insertBefore(row, s.nextSibling);
+        else if (!follows && centre < mid) s.parentNode.insertBefore(row, s);
+        else continue;
+        g.startPageY += row.getBoundingClientRect().top - before;
+        row.style.transform = 'translateY(' + (pageY - g.startPageY) + 'px)';
+        buzz();
+        break;
+      }
+    }
+
+    container.addEventListener('touchstart', function (e) {
+      lastTouch = Date.now();
+      if (e.touches.length !== 1) { g = null; return; }
+      start(e.touches[0].clientX, e.touches[0].clientY, e.target);
+    }, { passive: true });
+    container.addEventListener('touchmove', function (e) {
+      if (e.touches.length === 1) move(e.touches[0].clientX, e.touches[0].clientY, e);
+    }, { passive: false });
+    container.addEventListener('touchend', function (e) { lastTouch = Date.now(); end(e); }, { passive: false });
+    container.addEventListener('touchcancel', function () {
+      if (g) { clearTimeout(g.timer); clearInterval(g.scroller); if (g.row) { g.row.classList.remove('dragging'); g.row.style.transform = ''; } }
+      $('pull').style.height = '0px';
+      g = null;
+      render();
+    });
+    container.addEventListener('mousedown', function (e) {
+      if (Date.now() - lastTouch < 700 || e.button !== 0) return;
+      start(e.clientX, e.clientY, e.target);
+    });
+    window.addEventListener('mousemove', function (e) { if (g && Date.now() - lastTouch >= 700) move(e.clientX, e.clientY, e); });
+    window.addEventListener('mouseup', function (e) { if (g && Date.now() - lastTouch >= 700) end(e); });
+  }
+
+  // =========================================================================
+  // Phone split list panel (left 20%): tap = open, swipe left = DELETE,
+  // hold + drag = reorder, vertical swipe = scroll the panel.
+  // =========================================================================
+  function moveList(from, to) {
+    if (from === to) return;
+    var curList = state.lists[cur];
+    state.lists.splice(to, 0, state.lists.splice(from, 1)[0]);
+    cur = state.lists.indexOf(curList);
+    persist();
+  }
+
+  function renderPhoneLists() {
+    var root = $('phoneLists');
+    root.innerHTML = '';
+    state.lists.forEach(function (l, i) {
+      var row = el('div', 'phone-list-row' + (i === cur ? ' cur' : ''));
+      var content = el('div', 'phone-list-content');
+      content.appendChild(el('div', 'plist-name', l.name));
+      content.appendChild(el('div', 'plist-count', String(l.items.length)));
+      var del = el('button', 'phone-list-delete', 'DELETE');
+      del.type = 'button';
+      del.setAttribute('aria-label', 'Delete ' + l.name);
+      row.appendChild(content);
+      row.appendChild(del);
+      root.appendChild(row);
+      setupPhoneListGesture(row, content, del, i);
+    });
+  }
+
+  function setupPhoneListGesture(row, content, del, index) {
+    var W = 72, sx = 0, sy = 0, mode = null, timer = null, open = false, curX = 0, target = index;
+
+    function setX(x, anim) {
+      content.style.transition = anim ? 'transform .18s ease' : 'none';
+      content.style.transform = 'translateX(' + x + 'px)';
+    }
+    function shut() { open = false; curX = 0; setX(0, true); }
+    function marks(clear) {
+      var rs = $('phoneLists').querySelectorAll('.phone-list-row');
+      for (var k = 0; k < rs.length; k++) {
+        rs[k].classList.remove('drop-up', 'drop-down');
+        if (!clear && k === target && k !== index) rs[k].classList.add(k < index ? 'drop-up' : 'drop-down');
+      }
+    }
+    function reset() {
+      clearTimeout(timer);
+      row.classList.remove('dragging-list');
+      row.style.transform = '';
+      marks(true);
+    }
+
+    row.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 1) return;
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+      mode = 'pending'; target = index;
+      content.style.transition = 'none';
+      timer = setTimeout(function () {
+        if (mode !== 'pending') return;
+        mode = 'reorder';
+        if (open) shut();
+        row.classList.add('dragging-list');
+        buzz();
+      }, 350);
+    }, { passive: true });
+
+    row.addEventListener('touchmove', function (e) {
+      if (!mode || mode === 'scroll') return;
+      var t = e.touches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+      if (mode === 'pending') {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        clearTimeout(timer);
+        mode = Math.abs(dx) > Math.abs(dy) ? 'swipe' : 'scroll';   // scroll = let the panel scroll natively
+        if (mode === 'scroll') return;
+      }
+      if (e.cancelable) e.preventDefault();
+      if (mode === 'swipe') {
+        curX = Math.max(-W, Math.min(0, (open ? -W : 0) + dx));
+        setX(curX, false);
+      } else if (mode === 'reorder') {
+        row.style.transform = 'translateY(' + dy + 'px)';
+        var rs = $('phoneLists').querySelectorAll('.phone-list-row');
+        target = index;
+        for (var k = 0; k < rs.length; k++) {
+          if (k === index) continue;
+          var r = rs[k].getBoundingClientRect(), mid = r.top + r.height / 2;
+          if (k < index && t.clientY < mid) target = Math.min(target, k);
+          if (k > index && t.clientY > mid) target = Math.max(target, k);
+        }
+        marks(false);
+      }
+    }, { passive: false });
+
+    row.addEventListener('touchend', function (e) {
+      var m = mode; mode = null; clearTimeout(timer);
+      if (m === 'swipe') {
+        if (curX <= -W * 0.45) { open = true; curX = -W; setX(-W, true); } else shut();
+      } else if (m === 'reorder') {
+        var to = target;
+        reset();
+        moveList(index, to);
+        render();
+      } else if (m === 'pending') {
+        if (e.target === del) return;          // let the DELETE button's click through
+        if (open) { shut(); return; }
+        if (editing) return;
+        cur = index; window.scrollTo(0, 0); render();
+      }
+    }, { passive: true });
+
+    row.addEventListener('touchcancel', function () {
+      mode = null; reset(); setX(open ? -W : 0, true);
+    });
+
+    del.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      if (editing) return;
+      state.lists.splice(index, 1);
+      if (!state.lists.length) { state.lists.push({ name: 'List', items: [] }); cur = 0; }
+      else if (index < cur) cur--;
+      else if (cur >= state.lists.length) cur = state.lists.length - 1;
+      persist(); render();
+    });
+  }
+
+  // =========================================================================
+  // Items
+  // =========================================================================
+  function render() {
+    state.upper = true;
+    document.body.classList.add('caps');
+    renderPhoneLists();
+
+    var l = list();
+    $('title').textContent = '';
+    $('title').appendChild(document.createTextNode(l.name + ' '));
+    $('title').appendChild(el('span', '', '▾'));
+    var open = l.items.filter(function (i) { return !i.d; }).length;
+    $('count').textContent = open + ' on the watch · ' + (l.items.length - open) + ' lined out (hidden) · ' + l.items.length + '/' + MAX_ITEMS;
+
+    var root = $('items'); root.innerHTML = '';
+    function newRow(at) {
+      var row = el('div', 'newrow');
+      var inp = el('input', 'edit');
+      inp.type = 'text'; inp.maxLength = TEXT_LEN; inp.placeholder = 'New item'; inp.setAttribute('enterkeyhint', 'next');
+      wireInput(inp, at);
+      row.appendChild(inp);
+      root.appendChild(row);
+    }
+    if (editing && editing.isNew && editing.ii === 0) newRow(0);
+    l.items.forEach(function (it, ii) {
+      if (editing && !editing.isNew && editing.ii === ii) {
+        var er = el('div', 'newrow editrow');
+        var inp = el('input', 'edit');
+        inp.type = 'text'; inp.maxLength = TEXT_LEN; inp.value = it.t; inp.setAttribute('enterkeyhint', 'done');
+        var note = el('textarea', 'note-in');
+        note.rows = 3; note.maxLength = NOTE_LEN; note.value = it.n || '';
+        note.placeholder = 'Note (kept on the phone only, never shown on the watch)';
+        wireEdit(er, inp, note, ii);
+        er.appendChild(inp);
+        er.appendChild(note);
+        root.appendChild(er);
+      } else {
+        var row = el('div', 'item' + (it.d ? ' done' : ''));
+        row.setAttribute('data-i', ii);
+        var body = el('div', 'body');
+        body.appendChild(el('div', 'txt', it.t));
+        if (it.n) body.appendChild(el('div', 'note', it.n));
+        row.appendChild(body);
+        root.appendChild(row);
+      }
+      if (editing && editing.isNew && editing.ii === ii + 1) newRow(ii + 1);
+    });
+    $('emptyHint').hidden = !(l.items.length === 0 && !editing);
+    preview();
+    persist();
+  }
+
+  // Aircraft quick-list:  3030 SP1 TOW/M4D REFUEL DEFUEL TOW/FUELS CHARTA
+  //   -> new list "3030 SP1" with items: TOW M4D, REFUEL, DEFUEL, TOW FUELS, CHARTA
+  // TOW / RT / LT keep the next word; "X REM|INSTALL|SERV" stay together; "/" and "-" join words.
+  function buildAircraftList(v) {
+    var tokens = v.split(/\s+/).filter(Boolean);
+    if (tokens.length < 2 || !/^30\d{2}$/.test(tokens[0])) return false;
+
+    var norm = function (s) { return s.replace(/^[\/-]+/, '').replace(/[\/-]+/g, ' ').replace(/\s+/g, ' ').trim(); };
+    var rest = tokens.slice(2), tasks = [];
+
+    for (var i = 0; i < rest.length; i++) {
+      var tok = rest[i], up = tok.toUpperCase(), m = /^(TOW|RT|LT)(?:[\/-]+(.*))?$/i.exec(tok);
+      if (m) {
+        var prefix = m[1].toUpperCase(), tail = m[2] ? norm(m[2]) : '';
+        if (!m[2] && i + 1 < rest.length) tail = norm(rest[++i]);
+        tasks.push(clean(prefix + (tail ? ' ' + tail : '')));
+      } else if (i + 1 < rest.length && /^(REM|INSTALL|SERV)$/i.test(rest[i + 1])) {
+        tasks.push(clean(tok + ' ' + rest[++i].toUpperCase()));
+      } else if (/^(REM|INSTALL|SERV)$/.test(up)) {
+        tasks.push(up);
+      } else if (norm(tok)) {
+        tasks.push(clean(norm(tok)));
+      }
+    }
+
+    if (state.lists.length >= MAX_LISTS) { toast('Maximum ' + MAX_LISTS + ' lists'); return true; }
+
+    var nl = { name: clean(tokens[0] + ' ' + tokens[1]).substring(0, NAME_LEN), items: [] };
+    tasks.forEach(function (t) { if (t && nl.items.length < MAX_ITEMS) nl.items.push({ t: t, d: false }); });
+    if (tasks.length > MAX_ITEMS) toast('Only the first ' + MAX_ITEMS + ' items were kept');
+    state.lists.push(nl);
+    cur = state.lists.length - 1;
+    return true;
+  }
+
+  // A new item: just the text field. Return adds it and opens the next one.
+  function wireInput(inp, ii) {
+    var done = false;
+    activeCommit = function () { finish(false); };
+
+    function finish(next) {
+      if (done) return; done = true; activeCommit = null;
+      // Read the raw text: clean() cuts at 63 chars, which would chop a long aircraft line mid-word.
+      var raw = String(inp.value || '').replace(/\s+/g, ' ').trim();
+      editing = null;
+      if (AC_RE.test(raw) && buildAircraftList(raw)) { render(); return; }
+
+      var v = clean(raw), items = list().items;
+      if (v) {
+        items.splice(ii, 0, { t: v, d: false });
+        if (next && items.length < MAX_ITEMS) editing = { ii: ii + 1, isNew: true };
+        else if (next) toast('List is full (' + MAX_ITEMS + ')');
+      }
+      render();
+      if (editing) focusEdit();
+    }
+
+    // Normal items are limited to 63 chars; an aircraft line may be longer (it gets split up).
+    inp.addEventListener('input', function () { inp.maxLength = AC_RE.test(inp.value) ? AC_LEN : TEXT_LEN; });
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+      else if (e.key === 'Escape') { inp.value = ''; finish(false); }
+    });
+    inp.addEventListener('blur', function () { finish(false); });
+  }
+
+  // An existing item: the text plus its note. Saves when focus leaves both fields.
+  function wireEdit(row, inp, note, ii) {
+    var done = false;
+    activeCommit = function () { finish(); };
+    function finish() {
+      if (done) return; done = true; activeCommit = null;
+      var v = clean(inp.value), n = cleanNote(note.value), items = list().items;
+      editing = null;
+      if (!v) items.splice(ii, 1);
+      else { items[ii].t = v; if (n) items[ii].n = n; else delete items[ii].n; }
+      render();
+    }
+    row.addEventListener('focusout', function () {
+      setTimeout(function () { if (!row.contains(document.activeElement)) finish(); }, 0);
+    });
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); finish(); }
+      else if (e.key === 'Escape') {
+        var it = list().items[ii] || {};
+        inp.value = it.t || ''; note.value = it.n || ''; finish();
+      }
+    });
+  }
+
+  function focusEdit() {
+    var i = $('items').querySelector('input.edit');
+    if (i) { i.focus(); var n = i.value.length; try { i.setSelectionRange(n, n); } catch (e) {} }
+  }
+
+  function addAtTop() {
+    if (list().items.length >= MAX_ITEMS) { toast('List is full (' + MAX_ITEMS + ')'); return; }
+    editing = { ii: 0, isNew: true };
+    render(); focusEdit();
+    window.scrollTo(0, 0);
+  }
+
+  attachGestures($('main'), {
+    rowSel: '#items .item',
+    blocked: function () { return !!editing || sheetOpen(); },
+    onTap: function (row) {
+      editing = { ii: +row.getAttribute('data-i'), isNew: false };
+      render(); focusEdit();
+    },
+    onSwipe: function (row, dir) {
+      var ii = +row.getAttribute('data-i');
+      if (dir > 0) list().items[ii].d = !list().items[ii].d;
+      else list().items.splice(ii, 1);
+      buzz(); render();
+    },
+    onPull: addAtTop,
+    onReorder: function (order) {
+      var items = list().items;
+      list().items = order.map(function (i) { return items[i]; });
+      render();
+    }
+  });
+
+  // =========================================================================
+  // Lists sheet
+  // =========================================================================
+  var inlineMode = null;
+  function sheetOpen() { return $('sheetLists').classList.contains('open') || $('sheetMenu').classList.contains('open'); }
+  function openSheet(id) {
+    $('backdrop').classList.add('open'); $(id).classList.add('open');
+    if (id === 'sheetLists') renderLists();
+    if (id === 'sheetMenu') renderMenu();
+  }
+  function closeSheets() {
+    $('backdrop').classList.remove('open');
+    $('sheetLists').classList.remove('open'); $('sheetMenu').classList.remove('open');
+    $('lInline').hidden = true; inlineMode = null; resetDelete();
+    render();
+  }
+  $('backdrop').addEventListener('click', closeSheets);
+  $('title').addEventListener('click', function () { if (!editing) openSheet('sheetLists'); });
+  $('menu').addEventListener('click', function () { if (!editing) openSheet('sheetMenu'); });
+
+  function renderLists() {
+    var root = $('lrows'); root.innerHTML = '';
+    state.lists.forEach(function (l, i) {
+      var r = el('div', 'lrow' + (i === cur ? ' cur' : ''));
+      r.setAttribute('data-i', i);
+      r.appendChild(el('span', '', l.name));
+      r.appendChild(el('small', '', String(l.items.length)));
+      root.appendChild(r);
+    });
+    $('lNew').disabled = state.lists.length >= MAX_LISTS;
+  }
+
+  attachGestures($('lrows'), {
+    rowSel: '.lrow',
+    onTap: function (row) { cur = +row.getAttribute('data-i'); closeSheets(); },
+    onReorder: function (order) {
+      var curList = list();
+      state.lists = order.map(function (i) { return state.lists[i]; });
+      cur = state.lists.indexOf(curList);
+      renderLists(); persist();
+    }
+  });
+
+  function showInline(mode, value) {
+    inlineMode = mode;
+    $('lInline').hidden = false;
+    $('lInput').value = value; $('lInput').focus(); $('lInput').select();
+  }
+  $('lNew').addEventListener('click', function () { if (state.lists.length < MAX_LISTS) showInline('new', ''); });
+  $('lRename').addEventListener('click', function () { showInline('rename', list().name); });
+  function applyInline() {
+    var v = String($('lInput').value || '').replace(/\s+/g, ' ').trim().substring(0, NAME_LEN);
+    if (!v) { $('lInline').hidden = true; inlineMode = null; return; }
+    if (inlineMode === 'new') { state.lists.push({ name: v, items: [] }); cur = state.lists.length - 1; closeSheets(); return; }
+    if (inlineMode === 'rename') list().name = v;
+    $('lInline').hidden = true; inlineMode = null; renderLists(); render();
+  }
+  $('lOk').addEventListener('click', applyInline);
+  $('lInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); applyInline(); } });
+
+  var delArmed = false;
+  function resetDelete() { delArmed = false; $('lDelete').textContent = 'Delete'; }
+  $('lDelete').addEventListener('click', function () {
+    if (!delArmed) { delArmed = true; $('lDelete').textContent = 'Tap again'; setTimeout(resetDelete, 3000); return; }
+    state.lists.splice(cur, 1);
+    if (!state.lists.length) state.lists.push({ name: 'My list', items: [] });
+    cur = Math.min(cur, state.lists.length - 1);
+    resetDelete(); renderLists(); render();
+  });
+
+  // =========================================================================
+  // Settings + export
+  // =========================================================================
+  function renderMenu() {
+    Array.prototype.forEach.call($('font').children, function (b) { b.classList.toggle('on', +b.dataset.v === +state.font); });
+    preview();
+  }
+  $('font').addEventListener('click', function (e) {
+    if (e.target.dataset.v === undefined) return;
+    state.font = +e.target.dataset.v; renderMenu(); persist();
+  });
+
+  function exportText() {
+    var fmt = $('fmt').value, withNotes = $('withNotes').checked, out = [];
+    var U = function (s) { return String(s).toUpperCase(); };
+    state.lists.forEach(function (l) {
+      var items = l.items.filter(function (i) { return i.t.trim() && (fmt === 'check' || i.d); });
+      if (!items.length) return;
+      out.push(U(l.name));
+      items.forEach(function (i) {
+        out.push((fmt === 'check' ? (i.d ? '☑ ' : '☐ ') : '') + U(i.t));
+        if (withNotes && i.n) i.n.split('\n').forEach(function (ln) { out.push('    ' + ln); });
+      });
+      out.push('');
+    });
+    return out.join('\n').trim();
+  }
+  function preview() { $('preview').value = exportText(); }
+  $('fmt').addEventListener('change', preview);
+  $('withNotes').addEventListener('change', preview);
+
+  $('copy').addEventListener('click', function () {
+    var t = exportText();
+    function fallback() { $('preview').select(); try { document.execCommand('copy'); } catch (e) {} toast('Copied'); }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { toast('Copied'); }, fallback);
+    else fallback();
+  });
+  $('share').addEventListener('click', function () {
+    if (navigator.share) navigator.share({ title: 'Lists', text: exportText() }).catch(function () {});
+    else toast('Share is not available here – use Copy');
+  });
+  $('download').addEventListener('click', function () {
+    var a = el('a'); a.href = URL.createObjectURL(new Blob([exportText()], { type: 'text/plain' })); a.download = 'lists.txt';
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+
+  // =========================================================================
+  // Send to watch
+  // =========================================================================
+  function sendNow(auto) {
+    if (activeCommit) activeCommit();
+    state.lists.forEach(function (l) {
+      l.name = (l.name || 'List').trim().substring(0, NAME_LEN) || 'List';
+      l.items = l.items.filter(function (i) { return i.t && i.t.trim(); });
+    });
+    persist();
+    if (!fromApp) { if (!auto) toast('Open this page from the Pebble app\'s settings to send it'); return; }
+    dirty = false;
+    var q = new URLSearchParams(location.search).get('return_to');
+    location.href = (q || 'pebblejs://close#') + encodeURIComponent(JSON.stringify(state));
+  }
+  $('save').addEventListener('click', function () { sendNow(false); });
+
+  // Auto-send: when the page is hidden / the phone app is switched away from,
+  // send any unsent changes. (Skipped while running Share / Copy / Download.)
+  ['share', 'download', 'copy'].forEach(function (id) {
+    $(id).addEventListener('click', function () { leaving = true; setTimeout(function () { leaving = false; }, 5000); });
+  });
+  try { var as = localStorage.getItem('pebblelist_autosend'); if (as !== null) $('autoSend').checked = as === '1'; } catch (e) {}
+  $('autoSend').addEventListener('change', function () {
+    try { localStorage.setItem('pebblelist_autosend', this.checked ? '1' : '0'); } catch (e) {}
+  });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden' && dirty && !leaving && $('autoSend').checked) sendNow(true);
+  });
+  // No pinch / double-tap zoom (iOS ignores user-scalable=no)
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (ev) {
+    document.addEventListener(ev, function (e) { e.preventDefault(); });
+  });
+
+  render();
+  dirty = false;
+})();
+</script>
+</body>
+</html>
