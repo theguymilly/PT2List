@@ -62,11 +62,6 @@
     padding:4px 8px;
     color:var(--muted);
   }
-  .count {
-    padding:0 16px 6px calc(32% + 12px);
-    color:var(--muted);
-    font-size:13px;
-  }
   main {
     min-height:calc(100vh - 160px);
     position:relative;
@@ -332,21 +327,25 @@
     transition:opacity .2s;
     pointer-events:none;
     z-index:20;
+    max-width:90vw;
+    text-align:center;
   }
   .toast.show { opacity:1; }
   /* ================================================================
      Phone split list view
-     
-     32% gives the left panel enough width for 12-character names
-     while preserving approximately 68% for the task area.
+     The left column is as wide as the longest list name (min 64px,
+     max 55% of the screen). JS copies its width into --pw.
      ================================================================ */
   #phoneLists {
     position:fixed;
     left:0;
-    top:58px;
+    top:var(--hh, 58px);
     bottom:0;
-    width:32%;
+    width:max-content;
+    min-width:64px;
+    max-width:55vw;
     overflow-y:auto;
+    overflow-x:hidden;
     -webkit-overflow-scrolling:touch;
     background:var(--card);
     border-right:1px solid var(--line);
@@ -372,7 +371,7 @@
     background:var(--card);
     display:flex;
     align-items:center;
-    gap:3px;
+    gap:8px;
     will-change:transform;
   }
   .plist-name {
@@ -388,9 +387,23 @@
   .plist-count {
     flex:0 0 auto;
     color:var(--muted);
-    font-size:9px;
+    font-size:12px;
+    font-weight:600;
     line-height:1;
     white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+  }
+  .plist-edit {
+    font:600 16px/1.2 -apple-system, system-ui, sans-serif;
+    width:130px;
+    padding:2px 4px;
+    color:var(--ink);
+    background:var(--card);
+    border:1px solid var(--accent);
+    border-radius:6px;
+    outline:0;
+    -webkit-user-select:text;
+    user-select:text;
   }
   .phone-list-row.cur .phone-list-content {
     background:var(--accent);
@@ -429,19 +442,8 @@
     text-align:center;
   }
   #phoneContent {
-    margin-left:32%;
+    margin-left:var(--pw, 96px);
     min-width:0;
-  }
-  @media (min-width:800px) {
-    #phoneLists {
-      width:260px;
-    }
-    #phoneContent {
-      margin-left:260px;
-    }
-    .count {
-      padding-left:272px;
-    }
   }
 </style>
 </head>
@@ -450,7 +452,6 @@
   <button id="title"></button>
   <button id="menu" aria-label="Settings and export">⋯</button>
 </header>
-<div class="count" id="count"></div>
 <div id="phoneLists"></div>
 <div id="phoneContent">
   <main id="main">
@@ -525,10 +526,21 @@
       AC_LEN = 300;
   var AC_RE = /^30\d{2}(?:\s|$)/;
   var LS = 'pebblelist_page_v1';
-  var fromApp = false;
+  var fromApp = false,
+      returnTo = '';
   var state;
   (function init() {
     var h = location.hash.slice(1);
+    try {
+      returnTo = new URLSearchParams(location.search).get('return_to') || '';
+    } catch (e) {}
+    // The app may append ?return_to=... after the #data part
+    var rm = h.match(/[?&]return_to=([^&]*)/);
+    if (rm) {
+      try { returnTo = returnTo || decodeURIComponent(rm[1]); } catch (e) {}
+      h = h.slice(0, rm.index);
+    }
+    if (returnTo) fromApp = true;
     if (h) {
       try {
         state = JSON.parse(decodeURIComponent(h));
@@ -564,8 +576,10 @@
   };
   var dirty = false,
       leaving = false;
+  var lastSent = null;
   function persist() {
-    dirty = true;
+    // "dirty" only when something really differs from what was last sent
+    dirty = JSON.stringify(state) !== lastSent;
     try {
       localStorage.setItem(LS, JSON.stringify(state));
     } catch (e) {}
@@ -582,14 +596,14 @@
       .trim()
       .substring(0, TEXT_LEN);
   }
-  function toast(msg) {
+  function toast(msg, ms) {
     var t = $('toast');
     t.textContent = msg;
     t.classList.add('show');
     clearTimeout(toast._t);
     toast._t = setTimeout(function () {
       t.classList.remove('show');
-    }, 1800);
+    }, ms || 1800);
   }
   function buzz() {
     try {
@@ -932,6 +946,75 @@
     cur = state.lists.indexOf(curList);
     persist();
   }
+  // Number on the right of each list: tasks still to do. The list named
+  // ACFT instead shows how many OTHER lists there are (aircraft being worked).
+  function isAcft(l) {
+    return String(l.name || '').trim().toUpperCase() === 'ACFT';
+  }
+  function openItems(l) {
+    return l.items.filter(function (i) { return !i.d; }).length;
+  }
+  function listCount(l) {
+    if (isAcft(l)) return state.lists.length - 1;
+    return openItems(l);
+  }
+  // ACFT shows two numbers: how many other lists, and how many items are
+  // still to do across all of them.
+  function totalOpen() {
+    var n = 0;
+    state.lists.forEach(function (l) { if (!isAcft(l)) n += openItems(l); });
+    return n;
+  }
+  function countText(l) {
+    return isAcft(l)
+      ? (state.lists.length - 1) + '\u2003' + totalOpen()
+      : String(openItems(l));
+  }
+  function layoutPanel() {
+    var h = document.querySelector('header').offsetHeight;
+    var de = document.documentElement.style;
+    de.setProperty('--hh', h + 'px');
+    de.setProperty('--pw', $('phoneLists').offsetWidth + 'px');
+  }
+  window.addEventListener('resize', layoutPanel);
+  var renaming = false,
+      lastListTap = { i:-1, t:0 };
+  function startRename(index) {
+    if (renaming || editing) return;
+    var rows = $('phoneLists').querySelectorAll('.phone-list-row');
+    var row = rows[index];
+    if (!row) return;
+    var nameEl = row.querySelector('.plist-name');
+    var countEl = row.querySelector('.plist-count');
+    var inp = el('input', 'plist-edit');
+    inp.type = 'text';
+    inp.maxLength = NAME_LEN;
+    inp.value = state.lists[index].name;
+    inp.setAttribute('enterkeyhint', 'done');
+    renaming = true;
+    nameEl.replaceWith(inp);
+    if (countEl) countEl.hidden = true;
+    layoutPanel();
+    var done = false;
+    function finish(save) {
+      if (done) return;
+      done = true;
+      renaming = false;
+      var v = String(inp.value || '').replace(/\s+/g, ' ').trim().substring(0, NAME_LEN);
+      if (save && v) {
+        state.lists[index].name = v;
+        persist();
+      }
+      render();
+    }
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+      else if (e.key === 'Escape') { finish(false); }
+    });
+    inp.addEventListener('blur', function () { finish(true); });
+    inp.focus();
+    try { inp.select(); } catch (e) {}
+  }
   function renderPhoneLists() {
     var root = $('phoneLists');
     root.innerHTML = '';
@@ -952,7 +1035,7 @@
         el(
           'div',
           'plist-count',
-          String(l.items.length)
+          countText(l)
         )
       );
       var del = el(
@@ -975,6 +1058,7 @@
         i
       );
     });
+    layoutPanel();
   }
   function setupPhoneListGesture(
     row,
@@ -1036,7 +1120,7 @@
     row.addEventListener(
       'touchstart',
       function (e) {
-        if (e.touches.length !== 1) return;
+        if (renaming || e.touches.length !== 1) return;
         sx = e.touches[0].clientX;
         sy = e.touches[0].clientY;
         mode = 'pending';
@@ -1155,6 +1239,16 @@
             return;
           }
           if (editing) return;
+          var now = Date.now();
+          if (
+            lastListTap.i === index &&
+            now - lastListTap.t < 400
+          ) {
+            lastListTap = { i:-1, t:0 };
+            startRename(index);
+            return;
+          }
+          lastListTap = { i:index, t:now };
           cur = index;
           window.scrollTo(0, 0);
           render();
@@ -1171,6 +1265,13 @@
           open ? -W : 0,
           true
         );
+      }
+    );
+    row.addEventListener(
+      'dblclick',
+      function (e) {
+        if (e.target === del || open) return;
+        startRename(index);
       }
     );
     del.addEventListener(
@@ -1216,18 +1317,6 @@
     $('title').appendChild(
       el('span', '', '▾')
     );
-    var open =
-      l.items.filter(function (i) {
-        return !i.d;
-      }).length;
-    $('count').textContent =
-      open +
-      ' on the watch · ' +
-      (l.items.length - open) +
-      ' lined out (hidden) · ' +
-      l.items.length +
-      '/' +
-      MAX_ITEMS;
     var root = $('items');
     root.innerHTML = '';
     function newRow(at) {
@@ -1769,7 +1858,7 @@
           el(
             'small',
             '',
-            String(l.items.length)
+            countText(l)
           )
         );
         root.appendChild(r);
@@ -2119,18 +2208,16 @@
       return;
     }
     dirty = false;
-    var q =
-      new URLSearchParams(
-        location.search
-      ).get('return_to');
+    lastSent = JSON.stringify(state);
+    if (!auto) toast('Sent to watch');
     location.href =
-      (
-        q ||
-        'pebblejs://close#'
-      ) +
-      encodeURIComponent(
-        JSON.stringify(state)
-      );
+      (returnTo || 'pebblejs://close#') +
+      encodeURIComponent(JSON.stringify(state));
+    if (!auto) {
+      setTimeout(function () {
+        toast('Sent. If this page is still open, tap Done / Back in the Pebble app.', 6000);
+      }, 1500);
+    }
   }
   $('save').addEventListener(
     'click',
@@ -2211,6 +2298,7 @@
     }
   );
   render();
+  lastSent = JSON.stringify(state);
   dirty = false;
 })();
 </script>
