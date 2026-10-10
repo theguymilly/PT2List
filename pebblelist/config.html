@@ -550,6 +550,12 @@
     <button id="copy">Copy</button>
     <button id="download">Download .txt</button>
   </div>
+  <h3 style="margin-top:18px">Clear (after you've copied)</h3>
+  <div class="btns">
+    <button id="clearDone">Clear completed</button>
+    <button id="clearAll" class="danger">Clear all</button>
+  </div>
+  <p class="hint">Applies to every list. Tap twice to confirm, then Send to watch.</p>
   <textarea id="preview" readonly></textarea>
 </div>
 <div class="toast" id="toast"></div>
@@ -1919,6 +1925,7 @@
     $('lInline').hidden = true;
     inlineMode = null;
     resetDelete();
+    if (typeof disarm === 'function') disarm();
     render();
   }
   $('backdrop').addEventListener(
@@ -2108,7 +2115,61 @@
   /* ================================================================
      Settings + export
      ================================================================ */
+  // ---- Clear completed / Clear all (two taps to confirm) ----
+  function doneCount() {
+    var n = 0;
+    state.lists.forEach(function (l) {
+      l.items.forEach(function (i) { if (i.d) n++; });
+    });
+    return n;
+  }
+  var armed = null, armTimer = null;
+  function disarm() {
+    armed = null;
+    clearTimeout(armTimer);
+    labelClear();
+  }
+  function labelClear() {
+    var n = doneCount();
+    $('clearDone').textContent =
+      armed === 'done' ? 'Tap again to confirm' : 'Clear completed (' + n + ')';
+    $('clearDone').disabled = n === 0;
+    $('clearAll').textContent =
+      armed === 'all' ? 'Tap again to confirm' : 'Clear all';
+  }
+  function armOrRun(which, run) {
+    if (armed !== which) {
+      armed = which;
+      labelClear();
+      clearTimeout(armTimer);
+      armTimer = setTimeout(disarm, 3000);
+      return;
+    }
+    disarm();
+    run();
+  }
+  $('clearDone').addEventListener('click', function () {
+    armOrRun('done', function () {
+      var n = doneCount();
+      state.lists.forEach(function (l) {
+        l.items = l.items.filter(function (i) { return !i.d; });
+      });
+      persist();
+      closeSheets();
+      toast('Cleared ' + n + ' completed');
+    });
+  });
+  $('clearAll').addEventListener('click', function () {
+    armOrRun('all', function () {
+      state.lists = [{ name: 'My list', items: [] }];
+      cur = 0;
+      persist();
+      closeSheets();
+      toast('Everything cleared');
+    });
+  });
   function renderMenu() {
+    labelClear();
     Array.prototype.forEach.call(
       $('font').children,
       function (b) {
@@ -2395,18 +2456,22 @@
   document.addEventListener('touchmove', function (e) {
     if (e.touches && e.touches.length > 1 && e.cancelable) e.preventDefault();
   }, { passive:false });
-  var lastEnd = 0;
+  var lastEnd = 0, lastEx = -999, lastEy = -999;
   document.addEventListener('touchend', function (e) {
     var now = Date.now();
     var t = e.target && e.target.tagName;
+    var c = e.changedTouches && e.changedTouches[0];
+    var x = c ? c.clientX : 0, y = c ? c.clientY : 0;
+    // only a second tap on (about) the same spot counts as a double-tap
     if (
       now - lastEnd < 320 &&
+      Math.abs(x - lastEx) < 40 && Math.abs(y - lastEy) < 40 &&
       t !== 'INPUT' && t !== 'TEXTAREA' && t !== 'SELECT' &&
       e.cancelable
     ) {
       e.preventDefault();
     }
-    lastEnd = now;
+    lastEnd = now; lastEx = x; lastEy = y;
   }, { passive:false });
   [
     'gesturestart',
