@@ -387,6 +387,11 @@
   }
   .phone-head .plist-name { flex:1; font-weight:700; }
   .phone-head .plist-count { color:var(--ink); }
+  .phone-head { background:#111 !important; color:#fff; min-height:48px; gap:6px; padding:6px 8px; justify-content:center; }
+  .hg { display:flex; align-items:center; gap:5px; }
+  .hicon { image-rendering:pixelated; display:block; flex:0 0 auto; }
+  .hn { font-size:24px; font-weight:700; line-height:1; color:#fff; letter-spacing:0; font-variant-numeric:tabular-nums; }
+  .hdiv { width:2px; height:30px; background:#666; border-radius:1px; margin:0 6px; flex:0 0 auto; }
   .phone-list-row {
     position:relative;
     min-height:46px;
@@ -1023,6 +1028,7 @@
     de.setProperty('--pw', $('phoneLists').offsetWidth + 'px');
   }
   window.addEventListener('resize', layoutPanel);
+  if (window.ResizeObserver) new ResizeObserver(function () { requestAnimationFrame(layoutPanel); }).observe($('phoneLists'));
   var renaming = false,
       lastListTap = { i:-1, t:0 };
   function startRename(index) {
@@ -1114,12 +1120,17 @@
     if (e.target.tagName === 'TEXTAREA') return;
     startDescEdit();
   });
+  var ICON_JET = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAeCAYAAADHJYVoAAAAkklEQVR4nO2USw7AIAhEC+n9r0xXNIaAMqUf23SWOr4gjC4LIBERxM+IGdUccG0J0po5Kv/h98JtQrKJeb7yd8Kj/mb63oWPAKP9EJ5NRM/HngH9t6PzawXqnSUi0jW2m1W1nA/nvKJ9oO0grLx5ZPw8Mh6R8i59/lArQkhwc7fy6gvtws9SapBoWlSpyi0om64NLNxr9bDhsI4AAAAASUVORK5CYII=';
+  var ICON_TOOLS = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA/0lEQVR4nMWX2xLDIAhEwf//Z/vkTIZw2UVNeVMue5JSaEX+bOpdzjmniIiquv7KVj5SY1SFnsVYce8MAVhqFCKKy/LDN8BCdP1jOb0ApgeQWE9jVAG3IYZNZJtoF8LtgRXAincg6G6vijPQqqrDXlRJmYD1IfWgBkOaM4vJfOkkjMRs0QrQ5j/PEEAEgYjbuxcMCmAFVVV350YLwILsiIsQH8EN8RZAJN5Z3TRAJp7FHAFgXjsDAQGw33MGojV6d54cngNRsRPLqJyEXfEoJtsbL4Ad8Swvym8NIlbcO68HbW9DxJAGLru5I878MGkvo1MQ13qg++/qinUX1Sf2A/+8+A5GJ54nAAAAAElFTkSuQmCC';
   function renderPhoneLists() {
     var root = $('phoneLists');
     root.innerHTML = '';
     var head = el('div', 'phone-head');
-    head.appendChild(el('div', 'plist-name', 'ACFT'));
-    head.appendChild(el('div', 'plist-count', state.lists.length + '\u2003' + totalOpen()));
+    var jetImg = el('img', 'hicon'); jetImg.src = ICON_JET; jetImg.width = 23; jetImg.height = 30; jetImg.alt = 'ACFT';
+    var toolImg = el('img', 'hicon'); toolImg.src = ICON_TOOLS; toolImg.width = 32; toolImg.height = 32; toolImg.alt = 'TASKS';
+    var g1 = el('div', 'hg'); g1.appendChild(jetImg); g1.appendChild(el('div', 'hn', String(state.lists.length)));
+    var g2 = el('div', 'hg'); g2.appendChild(toolImg); g2.appendChild(el('div', 'hn', String(totalOpen())));
+    head.appendChild(g1); head.appendChild(el('div', 'hdiv')); head.appendChild(g2);
     root.appendChild(head);
     state.lists.forEach(function (l, i) {
       var row = el(
