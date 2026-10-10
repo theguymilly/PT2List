@@ -9,8 +9,8 @@
   @media (prefers-color-scheme: dark) {
     :root { --bg:#0e0e0e; --card:#1b1b1b; --ink:#f2f2f0; --muted:#8d8d89; --line:#2d2d2d; --accent:#ff7a2f; --accent-ink:#111; --danger:#ff6b6b; }
   }
-  html {
-    touch-action:manipulation;
+  html, body {
+    touch-action:pan-x pan-y;
     -webkit-text-size-adjust:100%;
     overscroll-behavior:none;
   }
@@ -163,6 +163,22 @@
     overflow-wrap:anywhere;
     text-transform:none;
   }
+  #desc {
+    padding:10px 16px;
+    border-bottom:1px solid var(--line);
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.4;
+    white-space:pre-wrap;
+    overflow-wrap:anywhere;
+    text-transform:none;
+    touch-action:pan-y;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+  #desc.empty-desc { font-style:italic; opacity:.6; }
+  #desc.editing { padding:8px 16px; }
+  #desc textarea { margin:0; }
   .empty {
     text-align:center;
     color:var(--muted);
@@ -346,12 +362,31 @@
     max-width:55vw;
     overflow-y:auto;
     overflow-x:hidden;
+    touch-action:pan-y;
     -webkit-overflow-scrolling:touch;
     background:var(--card);
     border-right:1px solid var(--line);
     z-index:5;
     padding-bottom:8px;
   }
+  .phone-head {
+    position:sticky;
+    top:0;
+    z-index:3;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    min-height:34px;
+    padding:6px;
+    background:var(--bg);
+    border-bottom:1px solid var(--line);
+    color:var(--muted);
+    letter-spacing:.06em;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+  .phone-head .plist-name { flex:1; font-weight:700; }
+  .phone-head .plist-count { color:var(--ink); }
   .phone-list-row {
     position:relative;
     min-height:46px;
@@ -441,6 +476,7 @@
     font-weight:700;
     text-align:center;
   }
+  #phoneLists *, .phone-head { touch-action:pan-y; }
   #phoneContent {
     margin-left:var(--pw, 96px);
     min-width:0;
@@ -458,6 +494,7 @@
     <div id="pull">
       <span id="pullTxt">Pull down to add</span>
     </div>
+    <div id="desc" role="button" tabindex="0"></div>
     <div id="items"></div>
     <div class="empty" id="emptyHint" hidden>
       Nothing here yet.<br>
@@ -513,6 +550,12 @@
     <button id="copy">Copy</button>
     <button id="download">Download .txt</button>
   </div>
+  <h3 style="margin-top:18px">Clear (after you've copied)</h3>
+  <div class="btns">
+    <button id="clearDone">Clear completed</button>
+    <button id="clearAll" class="danger">Clear all</button>
+  </div>
+  <p class="hint">Applies to every list. Tap twice to confirm, then Send to watch.</p>
   <textarea id="preview" readonly></textarea>
 </div>
 <div class="toast" id="toast"></div>
@@ -523,6 +566,7 @@
       TEXT_LEN = 63,
       NAME_LEN = 23,
       NOTE_LEN = 1000,
+      DESC_LEN = 300,
       AC_LEN = 300;
   var AC_RE = /^30\d{2}(?:\s|$)/;
   var LS = 'pebblelist_page_v1';
@@ -564,9 +608,18 @@
         ]
       };
     }
+    // ACFT is now a heading, not a list: drop an empty one saved earlier
+    var keep = state.lists.filter(function (l) {
+      return !(
+        String(l.name || '').trim().toUpperCase() === 'ACFT' &&
+        !(l.items && l.items.length)
+      );
+    });
+    if (keep.length) state.lists = keep;
   })();
   var cur = 0,
       editing = null,
+      descEditing = false,
       activeCommit = null;
   var $ = function (id) {
     return document.getElementById(id);
@@ -946,29 +999,22 @@
     cur = state.lists.indexOf(curList);
     persist();
   }
-  // Number on the right of each list: tasks still to do. The list named
-  // ACFT instead shows how many OTHER lists there are (aircraft being worked).
+  // Number on the right of each list: tasks still to do (not lined through).
   function isAcft(l) {
     return String(l.name || '').trim().toUpperCase() === 'ACFT';
   }
   function openItems(l) {
     return l.items.filter(function (i) { return !i.d; }).length;
   }
-  function listCount(l) {
-    if (isAcft(l)) return state.lists.length - 1;
-    return openItems(l);
+  function countText(l) {
+    return String(openItems(l));
   }
-  // ACFT shows two numbers: how many other lists, and how many items are
-  // still to do across all of them.
+  // The ACFT heading at the top of the left column is only a label:
+  // number of lists, then number of items still to do across all of them.
   function totalOpen() {
     var n = 0;
-    state.lists.forEach(function (l) { if (!isAcft(l)) n += openItems(l); });
+    state.lists.forEach(function (l) { n += openItems(l); });
     return n;
-  }
-  function countText(l) {
-    return isAcft(l)
-      ? (state.lists.length - 1) + '\u2003' + totalOpen()
-      : String(openItems(l));
   }
   function layoutPanel() {
     var h = document.querySelector('header').offsetHeight;
@@ -1015,9 +1061,66 @@
     inp.focus();
     try { inp.select(); } catch (e) {}
   }
+  // Completing "TOW M4D" on an aircraft list named "3030 S3A11" moves the
+  // aircraft: the list becomes "3030 M4D". (Same rule runs on the watch.)
+  function towRename(l, it) {
+    var m = /^TOW\s+(.+)$/i.exec(it.t || '');
+    var n = /^(30\d{2})\s+\S/.exec(l.name || '');
+    if (!m || !n) return false;
+    l.name = (n[1] + ' ' + m[1].trim().toUpperCase()).substring(0, NAME_LEN);
+    return true;
+  }
+  // Description of the current list: shown above the items, phone only,
+  // never a task and never sent to the watch.
+  function renderDesc() {
+    var box = $('desc');
+    var d = list().desc || '';
+    box.className = d ? '' : 'empty-desc';
+    box.textContent = d || 'Add description';
+  }
+  function startDescEdit() {
+    if (editing || descEditing || sheetOpen() || renaming) return;
+    var l = list(), box = $('desc');
+    descEditing = true;
+    var ta = el('textarea', 'note-in');
+    ta.rows = 3;
+    ta.maxLength = DESC_LEN;
+    ta.value = l.desc || '';
+    ta.placeholder = 'Description for this list (phone only, not a task)';
+    box.className = 'editing';
+    box.textContent = '';
+    box.appendChild(ta);
+    ta.focus();
+    var done = false;
+    function finish() {
+      if (done) return;
+      done = true;
+      descEditing = false;
+      activeCommit = null;
+      var v = String(ta.value || '').replace(/\r/g, '').trim().substring(0, DESC_LEN);
+      if (v) l.desc = v; else delete l.desc;
+      // no full re-render: a tap on another list that caused this blur still lands
+      renderDesc();
+      persist();
+      preview();
+    }
+    activeCommit = finish;
+    ta.addEventListener('blur', finish);
+    ta.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { ta.value = l.desc || ''; finish(); }
+    });
+  }
+  $('desc').addEventListener('click', function (e) {
+    if (e.target.tagName === 'TEXTAREA') return;
+    startDescEdit();
+  });
   function renderPhoneLists() {
     var root = $('phoneLists');
     root.innerHTML = '';
+    var head = el('div', 'phone-head');
+    head.appendChild(el('div', 'plist-name', 'ACFT'));
+    head.appendChild(el('div', 'plist-count', state.lists.length + '\u2003' + totalOpen()));
+    root.appendChild(head);
     state.lists.forEach(function (l, i) {
       var row = el(
         'div',
@@ -1317,6 +1420,7 @@
     $('title').appendChild(
       el('span', '', '▾')
     );
+    if (!descEditing) renderDesc();
     var root = $('items');
     root.innerHTML = '';
     function newRow(at) {
@@ -1753,7 +1857,7 @@
     {
       rowSel:'#items .item',
       blocked:function () {
-        return !!editing || sheetOpen();
+        return !!editing || descEditing || sheetOpen();
       },
       onTap:function (row) {
         editing = {
@@ -1769,6 +1873,12 @@
         if (dir > 0) {
           list().items[ii].d =
             !list().items[ii].d;
+          if (
+            list().items[ii].d &&
+            towRename(list(), list().items[ii])
+          ) {
+            toast('Location: ' + list().name);
+          }
         }
         else {
           list().items.splice(ii, 1);
@@ -1815,6 +1925,7 @@
     $('lInline').hidden = true;
     inlineMode = null;
     resetDelete();
+    if (typeof disarm === 'function') disarm();
     render();
   }
   $('backdrop').addEventListener(
@@ -2004,7 +2115,61 @@
   /* ================================================================
      Settings + export
      ================================================================ */
+  // ---- Clear completed / Clear all (two taps to confirm) ----
+  function doneCount() {
+    var n = 0;
+    state.lists.forEach(function (l) {
+      l.items.forEach(function (i) { if (i.d) n++; });
+    });
+    return n;
+  }
+  var armed = null, armTimer = null;
+  function disarm() {
+    armed = null;
+    clearTimeout(armTimer);
+    labelClear();
+  }
+  function labelClear() {
+    var n = doneCount();
+    $('clearDone').textContent =
+      armed === 'done' ? 'Tap again to confirm' : 'Clear completed (' + n + ')';
+    $('clearDone').disabled = n === 0;
+    $('clearAll').textContent =
+      armed === 'all' ? 'Tap again to confirm' : 'Clear all';
+  }
+  function armOrRun(which, run) {
+    if (armed !== which) {
+      armed = which;
+      labelClear();
+      clearTimeout(armTimer);
+      armTimer = setTimeout(disarm, 3000);
+      return;
+    }
+    disarm();
+    run();
+  }
+  $('clearDone').addEventListener('click', function () {
+    armOrRun('done', function () {
+      var n = doneCount();
+      state.lists.forEach(function (l) {
+        l.items = l.items.filter(function (i) { return !i.d; });
+      });
+      persist();
+      closeSheets();
+      toast('Cleared ' + n + ' completed');
+    });
+  });
+  $('clearAll').addEventListener('click', function () {
+    armOrRun('all', function () {
+      state.lists = [{ name: 'My list', items: [] }];
+      cur = 0;
+      persist();
+      closeSheets();
+      toast('Everything cleared');
+    });
+  });
   function renderMenu() {
+    labelClear();
     Array.prototype.forEach.call(
       $('font').children,
       function (b) {
@@ -2055,6 +2220,11 @@
         out.push(
           U(l.name)
         );
+        if (withNotes && l.desc) {
+          l.desc.split('\n').forEach(
+            function (ln) { out.push('    ' + ln); }
+          );
+        }
         items.forEach(
           function (i) {
             out.push(
@@ -2282,7 +2452,27 @@
       }
     }
   );
-  /* No pinch / double-tap zoom */
+  /* No pinch / double-tap zoom, anywhere (also inside the left column) */
+  document.addEventListener('touchmove', function (e) {
+    if (e.touches && e.touches.length > 1 && e.cancelable) e.preventDefault();
+  }, { passive:false });
+  var lastEnd = 0, lastEx = -999, lastEy = -999;
+  document.addEventListener('touchend', function (e) {
+    var now = Date.now();
+    var t = e.target && e.target.tagName;
+    var c = e.changedTouches && e.changedTouches[0];
+    var x = c ? c.clientX : 0, y = c ? c.clientY : 0;
+    // only a second tap on (about) the same spot counts as a double-tap
+    if (
+      now - lastEnd < 320 &&
+      Math.abs(x - lastEx) < 40 && Math.abs(y - lastEy) < 40 &&
+      t !== 'INPUT' && t !== 'TEXTAREA' && t !== 'SELECT' &&
+      e.cancelable
+    ) {
+      e.preventDefault();
+    }
+    lastEnd = now; lastEx = x; lastEy = y;
+  }, { passive:false });
   [
     'gesturestart',
     'gesturechange',
