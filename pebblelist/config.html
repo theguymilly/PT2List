@@ -2,6 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAACQElEQVR42u3dQVKDUBREUWJlqOOsTReYtek4G3DgEItCJPDf63NWYFLXLvKJePl8f53gNy/eAsSBOBAH4kAciANxIA7EgThAHIgDcSAOxIE4EAfiQByIA8SBOBAH4kAciANxVHG7P273h/dBHIgDcSAOxIE4EAdVXTwTbJqm+fHG18ebt8VyIA7EgTgQB+JAHIgDcSAOxAEz6fdWlr80Gn6HxXIgDsSBOBAH4kAciANx0F7uCen6P6iPPSe1HIgDcSAOxIE4EAfiQBy0l3hCuu1ho4HnpJYDcSAOxIE4EAfioJisc47//zuVqNMOy4E4EAfiQByIA3FQTMo5x77/MDbktMNyIA7EgWuO0642oq48LAeRy/G8zQjZD8tB2HIcsxnt98NyELAcx69F+xWxHBRcjp8lWPNbOM5m/HU/1r9Gy8FYrq4zTl8+1xxYDpvRaD8sBy2Wo8paLP/khVbEclB8OepuRumrEMtB2eXotBnlXpflQByIA3EgDsSBOBAH4kAciANmRr+3su/dy9GeYDz4HRbLgTgQB+JAHPi0csDnAq/RciAOxMG5PIfUVZHlwHIcsxkh+2E5CFsOzyG1HFiOsTej8X5YDgKWwxOMLQeWo+ZmNNsPy4E4EAfiQByc6tr4tc0/LzzjL966Pu/QcrCk/zfB5rb9rid8G95yYDn224/AzbAcWI5NKxK7FpYDy4HlQByIA3EgDsSBOBAHiANxIA7EgTgQB+JAHIgDcSAOEAfiQByIA3EgDsSBOGjtG6bUiCH7MpfFAAAAAElFTkSuQmCC">
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAACQElEQVR42u3dQVKDUBREUWJlqOOsTReYtek4G3DgEItCJPDf63NWYFLXLvKJePl8f53gNy/eAsSBOBAH4kAciANxIA7EgThAHIgDcSAOxIE4EAfiQByIA8SBOBAH4kAciANxVHG7P273h/dBHIgDcSAOxIE4EAdVXTwTbJqm+fHG18ebt8VyIA7EgTgQB+JAHIgDcSAOxAEz6fdWlr80Gn6HxXIgDsSBOBAH4kAciANx0F7uCen6P6iPPSe1HIgDcSAOxIE4EAfiQBy0l3hCuu1ho4HnpJYDcSAOxIE4EAfioJisc47//zuVqNMOy4E4EAfiQByIA3FQTMo5x77/MDbktMNyIA7EgWuO0642oq48LAeRy/G8zQjZD8tB2HIcsxnt98NyELAcx69F+xWxHBRcjp8lWPNbOM5m/HU/1r9Gy8FYrq4zTl8+1xxYDpvRaD8sBy2Wo8paLP/khVbEclB8OepuRumrEMtB2eXotBnlXpflQByIA3EgDsSBOBAH4kAciANmRr+3su/dy9GeYDz4HRbLgTgQB+JAHPi0csDnAq/RciAOxMG5PIfUVZHlwHIcsxkh+2E5CFsOzyG1HFiOsTej8X5YDgKWwxOMLQeWo+ZmNNsPy4E4EAfiQByc6tr4tc0/LzzjL966Pu/QcrCk/zfB5rb9rid8G95yYDn224/AzbAcWI5NKxK7FpYDy4HlQByIA3EgDsSBOBAHiANxIA7EgTgQB+JAHIgDcSAOEAfiQByIA3EgDsSBOGjtG6bUiCH7MpfFAAAAAElFTkSuQmCC">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="LISTS">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Pebble Lists</title>
 <style>
@@ -143,12 +147,12 @@
     border-radius:10px;
     padding:8px 10px;
     resize:none;
-    text-transform:none;
+    text-transform:uppercase;
     -webkit-user-select:text;
     user-select:text;
   }
   body.caps textarea.note-in {
-    text-transform:none;
+    text-transform:uppercase;
   }
   .item .body {
     flex:1;
@@ -161,7 +165,7 @@
     margin-top:3px;
     white-space:pre-wrap;
     overflow-wrap:anywhere;
-    text-transform:none;
+    text-transform:uppercase;
   }
   #desc {
     padding:10px 16px;
@@ -171,7 +175,7 @@
     line-height:1.4;
     white-space:pre-wrap;
     overflow-wrap:anywhere;
-    text-transform:none;
+    text-transform:uppercase;
     touch-action:pan-y;
     -webkit-user-select:none;
     user-select:none;
@@ -291,7 +295,7 @@
   body.caps select {
     text-transform:uppercase;
   }
-  body.caps textarea { text-transform:none; }
+  body.caps textarea { text-transform:uppercase; }
   .set {
     display:flex;
     align-items:center;
@@ -646,6 +650,7 @@
     return String(s || '')
       .replace(/\r/g, '')
       .trim()
+      .toUpperCase()
       .substring(0, NOTE_LEN);
   }
   function clean(s) {
@@ -1103,7 +1108,7 @@
       done = true;
       descEditing = false;
       activeCommit = null;
-      var v = String(ta.value || '').replace(/\r/g, '').trim().substring(0, DESC_LEN);
+      var v = String(ta.value || '').replace(/\r/g, '').trim().toUpperCase().substring(0, DESC_LEN);
       if (v) l.desc = v; else delete l.desc;
       // no full re-render: a tap on another list that caused this blur still lands
       renderDesc();
