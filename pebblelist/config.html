@@ -60,6 +60,9 @@
     font-size:16px;
     font-weight:500;
   }
+  .hr { display:flex; align-items:center; gap:2px; }
+  #pri, #tsk, #grp { color:var(--muted); padding:4px 8px; border-radius:10px; line-height:0; }
+  #pri.on, #tsk.on, #grp.on { background:var(--accent, #ea580c); color:var(--accent-ink); }
   #menu {
     font-size:26px;
     line-height:1;
@@ -495,7 +498,18 @@
 <body>
 <header>
   <button id="title"></button>
-  <button id="menu" aria-label="Settings and export">⋯</button>
+  <div class="hr">
+    <button id="pri" aria-label="Priority order (the order you set)" aria-pressed="true">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M10.2 2.5h3.6l-.7 12h-2.2zM12 17.2a2.1 2.1 0 1 1 0 4.2 2.1 2.1 0 0 1 0-4.2z"/></svg>
+    </button>
+    <button id="tsk" aria-label="Group lists by task" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" shape-rendering="crispEdges" aria-hidden="true"><path d="M3 1h3v1h-3zM16 1h2v1h-2zM4 2h3v1h-3zM15 2h4v1h-4zM1 3h1v1h-1zM5 3h3v1h-3zM14 3h6v1h-6zM1 4h2v1h-2zM6 4h2v1h-2zM15 4h6v1h-6zM1 5h3v1h-3zM6 5h2v1h-2zM16 5h6v1h-6zM2 6h7v1h-7zM16 6h7v1h-7zM3 7h7v1h-7zM14 7h9v1h-9zM6 8h5v1h-5zM13 8h4v1h-4zM19 8h3v1h-3zM7 9h4v1h-4zM12 9h5v1h-5zM20 9h1v1h-1zM8 10h2v1h-2zM11 10h5v1h-5zM10 11h5v1h-5zM9 12h5v1h-5zM8 13h5v1h-5zM14 13h2v1h-2zM7 14h5v1h-5zM13 14h4v1h-4zM6 15h5v1h-5zM13 15h5v1h-5zM5 16h5v1h-5zM14 16h7v1h-7zM4 17h5v1h-5zM15 17h7v1h-7zM3 18h5v1h-5zM16 18h2v1h-2zM20 18h3v1h-3zM3 19h4v1h-4zM16 19h2v1h-2zM21 19h2v1h-2zM4 20h2v1h-2zM16 20h3v1h-3zM17 21h3v1h-3zM18 22h2v1h-2z"/></svg>
+    </button>
+    <button id="grp" aria-label="Group lists by location" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+    </button>
+    <button id="menu" aria-label="Settings and export">⋯</button>
+  </div>
 </header>
 <div id="phoneLists"></div>
 <div id="phoneContent">
@@ -570,7 +584,7 @@
 <div class="toast" id="toast"></div>
 <script>
 (function () {
-  var MAX_LISTS = 10,
+  var MAX_LISTS = 15,
       MAX_ITEMS = 20,
       TEXT_LEN = 63,
       NAME_LEN = 23,
@@ -1007,6 +1021,7 @@
       state.lists.splice(from, 1)[0]
     );
     cur = state.lists.indexOf(curList);
+    if (!state.group && !state.task) savePrio(state.lists.map(nameKey));   // your priority order
     persist();
   }
   // Number on the right of each list: tasks still to do (not lined through).
@@ -1015,6 +1030,113 @@
   }
   function openItems(l) {
     return l.items.filter(function (i) { return !i.d; }).length;
+  }
+  // Finished lists (they have tasks, all lined through) sink to the bottom.
+  // Stable: every other list keeps its order. A brand-new empty list stays put.
+  function isFinished(l) {
+    return l.items.length > 0 && openItems(l) === 0;
+  }
+  // Location = second word of the name; its area = leading letters + digits
+  // (S3A11 and S3H are both area S3).
+  function areaKey(l) {
+    var w = String(l.name || '').trim().toUpperCase().split(/\s+/);
+    var loc = w[1] || '';
+    var m = /^[A-Z]+\d+/.exec(loc);
+    // every M location (M4D, M4A...) belongs to area S2, listed after the real S2 ones
+    if (/^M/.test(loc)) return { area: 'S2', loc: 'ZZZ' + loc };
+    // FUELS, CORROSION, PAINT and every SP location belong to area S1, after the real S1 ones
+    if (/^(FUELS?|CORROSION|PAINT|SP)/.test(loc)) return { area: 'S1', loc: 'ZZZ' + loc };
+    return { area: m ? m[0] : loc, loc: loc };
+  }
+  // Two tasks "match" when their text is identical (any TOW matches any TOW, any SERV any SERV).
+  // A list is filed under the open task it shares with the most other lists.
+  var taskInfo = new Map();
+  function matchKey(t) {
+    var u = String(t || '').replace(/\s+/g, ' ').trim().toUpperCase();
+    var m = /^(TOW|SERV)(\s|$)/.exec(u);   // any TOW / any SERV (SERV OIL, SERV EPU NITE...) match
+    if (m) return m[1];
+    return /^370/.test(u) ? '370' : u;     // 370SET, 370 SET... all match
+  }
+  function computeTaskInfo(lists) {
+    var count = {};
+    taskInfo = new Map();
+    lists.forEach(function (l) {
+      var seen = {};
+      l.items.forEach(function (it) {
+        if (it.d) return;
+        var k = matchKey(it.t);
+        if (k && !seen[k]) { seen[k] = 1; count[k] = (count[k] || 0) + 1; }
+      });
+    });
+    lists.forEach(function (l) {
+      var best = null;
+      l.items.forEach(function (it) {
+        if (it.d) return;
+        var k = matchKey(it.t), n = count[k] || 0;
+        if (n < 2) return;
+        if (!best || n > best.n || (n === best.n && k < best.k)) best = { k: k, n: n };
+      });
+      taskInfo.set(l, best || { k: '', n: 0 });
+    });
+  }
+  function byOrder(a, b) {
+    var c = 0, x, y;
+    if (state.group) {
+      x = areaKey(a.l); y = areaKey(b.l);
+      if (!x.area !== !y.area) return x.area ? -1 : 1;   // no location goes last
+      c = x.area.localeCompare(y.area, undefined, { numeric: true });
+      if (c) return c;
+    }
+    if (state.task) {
+      var ta = taskInfo.get(a.l), tb = taskInfo.get(b.l);
+      if (!ta.k !== !tb.k) return ta.k ? -1 : 1;           // lists with no shared task go last
+      if (ta.n !== tb.n) return tb.n - ta.n;               // bigger groups first
+      c = ta.k.localeCompare(tb.k, undefined, { numeric: true });
+      if (c) return c;
+    }
+    if (state.group) {
+      c = x.loc.localeCompare(y.loc, undefined, { numeric: true });
+      if (c) return c;
+    }
+    return a.i - b.i;
+  }
+  // Priority order: the order you set by dragging lists. Saved on the page so it
+  // comes back when the group / task sorts are switched off.
+  var prio = null;
+  function nameKey(l) { return String(l.name || '').trim().toUpperCase(); }
+  function loadPrio() {
+    try { prio = JSON.parse(localStorage.getItem('pebblelist_prio')); } catch (e) { prio = null; }
+    if (!Array.isArray(prio)) prio = state.lists.map(nameKey);
+  }
+  function savePrio(names) {
+    prio = names;
+    try { localStorage.setItem('pebblelist_prio', JSON.stringify(prio)); } catch (e) {}
+  }
+  function prioRename(from, to) {
+    from = String(from || '').trim().toUpperCase(); to = String(to || '').trim().toUpperCase();
+    if (!prio || from === to) return;
+    var i = prio.indexOf(from);
+    if (i >= 0) savePrio(prio.map(function (n, k) { return k === i ? to : n; }));
+  }
+  function byPrio(a, b) {
+    var x = prio ? prio.indexOf(nameKey(a.l)) : -1, y = prio ? prio.indexOf(nameKey(b.l)) : -1;
+    if (x < 0) x = 1e6; if (y < 0) y = 1e6;
+    return x - y || a.i - b.i;
+  }
+  function sortFinished() {
+    var curList = state.lists[cur];
+    var live = state.lists.filter(function (l) { return !isFinished(l); });
+    var done = state.lists.filter(isFinished);
+    {
+      var any = state.group || state.task;
+      if (any) computeTaskInfo(live);
+      [live, done].forEach(function (g, gi) {
+        var s = g.map(function (l, i) { return { l: l, i: i }; }).sort(any ? byOrder : byPrio).map(function (o) { return o.l; });
+        if (gi === 0) live = s; else done = s;
+      });
+    }
+    state.lists = live.concat(done);
+    if (curList) cur = Math.max(0, state.lists.indexOf(curList));
   }
   function countText(l) {
     return String(openItems(l));
@@ -1059,6 +1181,7 @@
       renaming = false;
       var v = String(inp.value || '').replace(/\s+/g, ' ').trim().substring(0, NAME_LEN);
       if (save && v) {
+        prioRename(state.lists[index].name, v);
         state.lists[index].name = v;
         persist();
       }
@@ -1078,7 +1201,9 @@
     var m = /^TOW\s+(.+)$/i.exec(it.t || '');
     var n = /^(30\d{2})\s+\S/.exec(l.name || '');
     if (!m || !n) return false;
+    var old = l.name;
     l.name = (n[1] + ' ' + m[1].trim().toUpperCase()).substring(0, NAME_LEN);
+    prioRename(old, l.name);
     return true;
   }
   // Description of the current list: shown above the items, phone only,
@@ -1424,6 +1549,13 @@
      ================================================================ */
   function render() {
     state.upper = true;
+    sortFinished();
+    $('pri').classList.toggle('on', !state.group && !state.task);
+    $('pri').setAttribute('aria-pressed', (!state.group && !state.task) ? 'true' : 'false');
+    $('tsk').classList.toggle('on', !!state.task);
+    $('tsk').setAttribute('aria-pressed', state.task ? 'true' : 'false');
+    $('grp').classList.toggle('on', !!state.group);
+    $('grp').setAttribute('aria-pressed', state.group ? 'true' : 'false');
     document.body.classList.add('caps');
     renderPhoneLists();
     var l = list();
@@ -1899,6 +2031,7 @@
         else {
           list().items.splice(ii, 1);
         }
+        sortFinished();
         buzz();
         render();
       },
@@ -2503,6 +2636,31 @@
       );
     }
   );
+  $('pri').addEventListener('click', function () {
+    state.group = false; state.task = false;
+    try { localStorage.setItem('pebblelist_group', '0'); localStorage.setItem('pebblelist_task', '0'); } catch (e) {}
+    sortFinished();
+    persist();
+    render();
+  });
+  $('tsk').addEventListener('click', function () {
+    state.task = !state.task;
+    try { localStorage.setItem('pebblelist_task', state.task ? '1' : '0'); } catch (e) {}
+    sortFinished();
+    persist();
+    render();
+  });
+  $('grp').addEventListener('click', function () {
+    state.group = !state.group;
+    try { localStorage.setItem('pebblelist_group', state.group ? '1' : '0'); } catch (e) {}
+    sortFinished();
+    persist();
+    render();
+  });
+  try { state.group = localStorage.getItem('pebblelist_group') === '1'; } catch (e) { state.group = false; }
+  try { state.task = localStorage.getItem('pebblelist_task') === '1'; } catch (e) { state.task = false; }
+  loadPrio();
+  sortFinished();
   render();
   lastSent = JSON.stringify(state);
   dirty = false;
