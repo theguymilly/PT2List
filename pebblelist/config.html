@@ -488,7 +488,7 @@
     font-weight:700;
     text-align:center;
   }
-  #phoneLists *, .phone-head { touch-action:pan-y; }
+  #phoneLists, #phoneLists *, .phone-head { touch-action:pan-y; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
   #phoneContent {
     margin-left:var(--pw, 96px);
     min-width:0;
@@ -583,6 +583,14 @@
 </div>
 <div class="toast" id="toast"></div>
 <script>
+  // The browser's "ResizeObserver loop" notice is harmless; don't let it surface as an uncaught error.
+  window.addEventListener('error', function (e) {
+    if (e && /ResizeObserver/.test(String(e.message || ''))) {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+    }
+  });
+
 (function () {
   var MAX_LISTS = 15,
       MAX_ITEMS = 20,
@@ -2021,12 +2029,7 @@
         if (dir > 0) {
           list().items[ii].d =
             !list().items[ii].d;
-          if (
-            list().items[ii].d &&
-            towRename(list(), list().items[ii])
-          ) {
-            toast('Location: ' + list().name);
-          }
+          if (list().items[ii].d) towRename(list(), list().items[ii]);   // no pop-up
         }
         else {
           list().items.splice(ii, 1);
@@ -2612,9 +2615,13 @@
     var c = e.changedTouches && e.changedTouches[0];
     var x = c ? c.clientX : 0, y = c ? c.clientY : 0;
     // only a second tap on (about) the same spot counts as a double-tap
+    // inside the left column rows are only ~46px apart, so use a wider radius there
+    // (decided by position: the tap itself may have re-rendered and detached its target)
+    var pr = $('phoneLists').getBoundingClientRect();
+    var rad = (x >= pr.left && x <= pr.right && y >= pr.top && y <= pr.bottom) ? 110 : 40;
     if (
       now - lastEnd < 320 &&
-      Math.abs(x - lastEx) < 40 && Math.abs(y - lastEy) < 40 &&
+      Math.abs(x - lastEx) < rad && Math.abs(y - lastEy) < rad &&
       t !== 'INPUT' && t !== 'TEXTAREA' && t !== 'SELECT' &&
       e.cancelable
     ) {
