@@ -1692,7 +1692,7 @@
             el(
               'div',
               'note',
-              it.n
+              '- ' + it.n + ' -'
             )
           );
         }
@@ -2421,7 +2421,7 @@
               withNotes &&
               i.n
             ) {
-              i.n
+              ('- ' + i.n + ' -')
                 .split('\n')
                 .forEach(
                   function (ln) {
