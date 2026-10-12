@@ -4,7 +4,7 @@
 // ---------------------------------------------------------------------------
 // Limits (kept modest so the app fits comfortably in watch RAM)
 // ---------------------------------------------------------------------------
-#define MAX_LISTS 10
+#define MAX_LISTS 15
 #define MAX_ITEMS 20
 #define NAME_LEN  24
 #define TEXT_LEN  64     // 63 characters per item; long items wrap onto more lines
@@ -59,12 +59,19 @@ static void save_meta(void) {
   persist_write_data(P_META, &m, sizeof(m));
 }
 
+// Save a string using only as many bytes as it needs (storage is small).
+static void persist_write_str(uint32_t key, const char *buf, int cap) {
+  int n = 0;
+  while (n < cap - 1 && buf[n]) n++;
+  persist_write_data(key, buf, n + 1);
+}
+
 static void save_all(void) {
   save_meta();
   for (int l = 0; l < s_nlists; l++) {
-    persist_write_data(P_NAME + l, s_names[l], NAME_LEN);
+    persist_write_str(P_NAME + l, s_names[l], NAME_LEN);
     for (int i = 0; i < s_count[l]; i++) {
-      persist_write_data(P_ITEM + l * MAX_ITEMS + i, s_text[l][i], TEXT_LEN);
+      persist_write_str(P_ITEM + l * MAX_ITEMS + i, s_text[l][i], TEXT_LEN);
     }
   }
 }
@@ -209,7 +216,7 @@ static void draw_list_row(GContext *ctx, const Layer *cell, const char *text, co
   graphics_draw_text(ctx, text, main_font(), tr, GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
   if (right) {
     GRect rr = GRect(b.size.w - right_w - 6, (b.size.h - 22) / 2 - 3, right_w, 24);
-    graphics_draw_text(ctx, right, fonts_get_system_font(FONT_KEY_GOTHIC_18),
+    graphics_draw_text(ctx, right, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD),
                        rr, GTextOverflowModeTrailingEllipsis, GTextAlignmentRight, NULL);
   }
 }
@@ -323,7 +330,7 @@ static void item_select(MenuLayer *m, MenuIndex *idx, void *c) {
       strncpy(nn + 5, t + 4, NAME_LEN - 6);          // the new location
       memcpy(s_names[l], nn, NAME_LEN);
       s_names[l][NAME_LEN - 1] = 0;
-      persist_write_data(P_NAME + l, s_names[l], NAME_LEN);
+      persist_write_str(P_NAME + l, s_names[l], NAME_LEN);
       if (s_title) {
         make_text(s_title_buf, sizeof(s_title_buf), s_names[l]);
         text_layer_set_text(s_title, s_title_buf);
@@ -339,7 +346,7 @@ static void item_select(MenuLayer *m, MenuIndex *idx, void *c) {
   memset(s_text[l][s_count[l]], 0, TEXT_LEN);
   save_meta();
   for (int k = i; k < s_count[l]; k++) {
-    persist_write_data(P_ITEM + l * MAX_ITEMS + k, s_text[l][k], TEXT_LEN);
+    persist_write_str(P_ITEM + l * MAX_ITEMS + k, s_text[l][k], TEXT_LEN);
   }
   persist_delete(P_ITEM + l * MAX_ITEMS + s_count[l]);
 
