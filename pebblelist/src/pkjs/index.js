@@ -6,7 +6,7 @@
 var CONFIG_URL = 'https://theguymilly.github.io/PT2List/pebblelist/config.html';
 
 var STORE_KEY = 'pebblelist_v1';
-var MAX_LISTS = 10, MAX_ITEMS = 20, TEXT_LEN = 63, NAME_LEN = 23, NOTE_LEN = 1000, DESC_LEN = 300;
+var MAX_LISTS = 15, MAX_ITEMS = 20, TEXT_LEN = 63, NAME_LEN = 23, NOTE_LEN = 1000, DESC_LEN = 300;
 
 var CMD_RESET = 1, CMD_LIST = 2, CMD_ITEM = 3, CMD_END = 4;
 var CMD_CROSS = 10;      // watch -> phone: I crossed this item out
