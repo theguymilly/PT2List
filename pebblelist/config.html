@@ -1246,7 +1246,7 @@
     var box = $('desc');
     var d = list().desc || '';
     box.className = d ? '' : 'empty-desc';
-    box.textContent = d ? '- ' + d + ' -' : 'Add description';   // shown wrapped in - -
+    box.textContent = d ? '-' + d + '-' : 'Add description';   // shown wrapped in - -
   }
   function startDescEdit() {
     if (editing || descEditing || sheetOpen() || renaming) return;
