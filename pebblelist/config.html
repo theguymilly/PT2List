@@ -2399,7 +2399,7 @@
           U(l.name)
         );
         if (withNotes && l.desc) {
-          ('- ' + l.desc + ' -').split('\n').forEach(
+          ('-' + l.desc + '-').split('\n').forEach(
             function (ln) { out.push('    ' + ln); }
           );
         }
@@ -2421,7 +2421,7 @@
               withNotes &&
               i.n
             ) {
-              ('- ' + i.n + ' -')
+              ('-' + i.n + '-')
                 .split('\n')
                 .forEach(
                   function (ln) {
