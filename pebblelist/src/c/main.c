@@ -216,7 +216,7 @@ static void draw_list_row(GContext *ctx, const Layer *cell, const char *text, co
   graphics_draw_text(ctx, text, main_font(), tr, GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
   if (right) {
     GRect rr = GRect(b.size.w - right_w - 6, (b.size.h - 22) / 2 - 3, right_w, 24);
-    graphics_draw_text(ctx, right, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD),
+    graphics_draw_text(ctx, right, fonts_get_system_font(FONT_KEY_GOTHIC_18),
                        rr, GTextOverflowModeTrailingEllipsis, GTextAlignmentRight, NULL);
   }
 }

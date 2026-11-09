@@ -170,6 +170,21 @@
     overflow-wrap:anywhere;
     text-transform:uppercase;
   }
+  #came {
+    display:block;
+    margin:8px 16px 0;
+    padding:6px 12px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--card);
+    color:var(--muted);
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+  }
+  #came[hidden] { display:none; }
+  #came b { color:var(--ink); }
   #desc {
     padding:10px 16px;
     border-bottom:1px solid var(--line);
@@ -517,6 +532,7 @@
     <div id="pull">
       <span id="pullTxt">Pull down to add</span>
     </div>
+    <button id="came" type="button" hidden></button>
     <div id="desc" role="button" tabindex="0"></div>
     <div id="items"></div>
     <div class="empty" id="emptyHint" hidden>
@@ -582,6 +598,7 @@
   <textarea id="preview" readonly></textarea>
 </div>
 <div class="toast" id="toast"></div>
+<script>/*__PL_INIT__*/</script>
 <script>
   // The browser's "ResizeObserver loop" notice is harmless; don't let it surface as an uncaught error.
   window.addEventListener('error', function (e) {
@@ -629,6 +646,11 @@
   var state;
   (function init() {
     var h = location.hash.slice(1);
+    // Bundled in the watch app: the app hands the lists over inside the page itself
+    if (window.__PL_INIT__ && window.__PL_INIT__.lists) {
+      state = window.__PL_INIT__;
+      fromApp = true;
+    }
     try {
       returnTo = new URLSearchParams(location.search).get('return_to') || '';
     } catch (e) {}
@@ -639,7 +661,7 @@
       h = h.slice(0, rm.index);
     }
     if (returnTo) fromApp = true;
-    if (h) {
+    if (h && !state) {
       try {
         state = JSON.parse(decodeURIComponent(h));
         fromApp = true;
@@ -1136,11 +1158,14 @@
   var prio = null;
   function nameKey(l) { return String(l.name || '').trim().toUpperCase(); }
   function loadPrio() {
-    try { prio = JSON.parse(localStorage.getItem('pebblelist_prio')); } catch (e) { prio = null; }
+    prio = Array.isArray(state.prio) ? state.prio : null;
+    if (!prio) { try { prio = JSON.parse(localStorage.getItem('pebblelist_prio')); } catch (e) { prio = null; } }
     if (!Array.isArray(prio)) prio = state.lists.map(nameKey);
+    state.prio = prio;
   }
   function savePrio(names) {
     prio = names;
+    state.prio = prio;
     try { localStorage.setItem('pebblelist_prio', JSON.stringify(prio)); } catch (e) {}
   }
   function prioRename(from, to) {
@@ -1581,8 +1606,60 @@
   /* ================================================================
      Items
      ================================================================ */
+  // Location memory: remembers where each aircraft (30xx) was before, so a tow can be
+  // switched back. Noticed from the name itself, so tows done on the watch count too.
+  var LOCK = 'pebblelist_loc';
+  var locMap = (state.loc && typeof state.loc === 'object') ? state.loc : null;
+  if (!locMap) { try { locMap = JSON.parse(localStorage.getItem(LOCK)); } catch (e) {} }
+  if (!locMap || typeof locMap !== 'object') locMap = {};
+  state.loc = locMap;
+  function saveLoc() { state.loc = locMap; try { localStorage.setItem(LOCK, JSON.stringify(locMap)); } catch (e) {} }
+  function splitName(l) {
+    var m = /^(30\d{2})\s+(.+)$/.exec(String(l.name || '').trim().toUpperCase());
+    return m ? { tail: m[1], loc: m[2] } : null;
+  }
+  function trackLoc() {
+    var changed = false;
+    state.lists.forEach(function (l) {
+      var n = splitName(l);
+      if (!n) return;
+      var r = locMap[n.tail];
+      if (!r) { locMap[n.tail] = { cur: n.loc, hist: [] }; changed = true; }
+      else if (r.cur !== n.loc) {
+        if (r.cur) r.hist.push(r.cur);
+        if (r.hist.length > 6) r.hist.shift();
+        r.cur = n.loc; changed = true;
+      }
+    });
+    if (changed) saveLoc();
+  }
+  function backTask(l) {
+    var n = splitName(l), r = n && locMap[n.tail];
+    var prev = r && r.hist.length ? r.hist[r.hist.length - 1] : '';
+    if (!prev || prev === n.loc) return null;
+    var text = ('TOW ' + prev).substring(0, TEXT_LEN);
+    var have = l.items.some(function (i) { return !i.d && i.t === text; });
+    return have ? null : { prev: prev, text: text };
+  }
+  function renderCame() {
+    var b = $('came'), t = backTask(list());
+    if (!t) { b.hidden = true; return; }
+    b.hidden = false;
+    b.textContent = '';
+    b.appendChild(document.createTextNode('\u21A9 Add tow back to '));
+    b.appendChild(el('b', '', t.prev));
+  }
+  // Adds "TOW <old location>" at the top. Finishing that tow renames the list as usual.
+  $('came').addEventListener('click', function () {
+    var l = list(), t = backTask(l);
+    if (!t || l.items.length >= MAX_ITEMS) return;
+    l.items.unshift({ t: t.text, d: false });
+    persist();
+    render();
+  });
   function render() {
     state.upper = true;
+    trackLoc();
     sortFinished();
     $('pri').classList.toggle('on', !state.group && !state.task);
     $('pri').setAttribute('aria-pressed', (!state.group && !state.task) ? 'true' : 'false');
@@ -1603,6 +1680,7 @@
       el('span', '', '▾')
     );
     if (!descEditing) renderDesc();
+    renderCame();
     var root = $('items');
     root.innerHTML = '';
     function newRow(at) {
@@ -2341,6 +2419,7 @@
     armOrRun('all', function () {
       state.lists = [{ name: 'My list', items: [] }];
       cur = 0;
+      locMap = {}; saveLoc();
       persist();
       closeSheets();
       toast('Everything cleared');
@@ -2596,19 +2675,25 @@
       );
     }
   );
-  try {
-    var as =
-      localStorage.getItem(
-        'pebblelist_autosend'
-      );
-    if (as !== null) {
-      $('autoSend').checked =
-        as === '1';
-    }
-  } catch (e) {}
+  if (typeof state.auto === 'boolean') {
+    $('autoSend').checked = state.auto;
+  } else {
+    try {
+      var as =
+        localStorage.getItem(
+          'pebblelist_autosend'
+        );
+      if (as !== null) {
+        $('autoSend').checked =
+          as === '1';
+      }
+    } catch (e) {}
+  }
   $('autoSend').addEventListener(
     'change',
     function () {
+      state.auto = this.checked;
+      persist();
       try {
         localStorage.setItem(
           'pebblelist_autosend',
@@ -2690,8 +2775,12 @@
     persist();
     render();
   });
-  try { state.group = localStorage.getItem('pebblelist_group') === '1'; } catch (e) { state.group = false; }
-  try { state.task = localStorage.getItem('pebblelist_task') === '1'; } catch (e) { state.task = false; }
+  if (typeof state.group !== 'boolean') {
+    try { state.group = localStorage.getItem('pebblelist_group') === '1'; } catch (e) { state.group = false; }
+  }
+  if (typeof state.task !== 'boolean') {
+    try { state.task = localStorage.getItem('pebblelist_task') === '1'; } catch (e) { state.task = false; }
+  }
   loadPrio();
   sortFinished();
   render();
