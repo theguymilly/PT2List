@@ -86,7 +86,7 @@ diorite so it also runs on older models.
   completing an item like `TOW M4D` (on the phone or the watch) renames the
   list to `3030 M4D`, so the list always shows where the aircraft is now.
   Undoing the tow on the phone does not change the name back.
-* Limits: 10 lists, 20 items each, 63 characters per item.
+* Limits: 15 lists, 20 items each, 63 characters per item.
 
 ## Exporting
 
@@ -96,6 +96,11 @@ Open the **⋯** menu. **Export** has two choices:
   (lined through). No boxes.
 * **Checklist with boxes:** every item, ☐ for not done and ☑ for done, so you
   can see what has and hasn't been done.
+
+Under the Copy / Download buttons are **Clear completed** (removes every
+lined-through item from every list) and **Clear all** (removes every list and
+description, leaving one empty list). Each needs two taps to confirm. Then tap
+**Send to watch** so the watch is cleared too.
 
 Both show a preview. Notes go underneath each item (untick **Include notes**
 to leave them out). Then **Share…** (pick Notes or Messages from the iPhone
@@ -125,3 +130,17 @@ share sheet), **Copy**, or **Download .txt**.
 4. **Fonts.** Watchapps cannot use arbitrary phone fonts; text size is
    selectable (small / medium / large) and text is always capitals. A different
    typeface would mean bundling a font file into the app at build time.
+
+## Offline settings page (v1.15)
+
+The settings page (`config.html`) is built into the phone-side code, so it opens with no
+internet. `src/pkjs/page.js` is generated from it:
+
+    python3 tools/embed.py        # run after every edit to config.html, then rebuild
+
+- `USE_BUNDLED` at the top of `src/pkjs/index.js` switches back to the copy on GitHub Pages
+  (`CONFIG_URL`) if the bundled page ever fails to open. It is also used automatically if
+  `page.js` is missing.
+- The page's own settings (location grouping, task grouping, priority order, location
+  memory, auto-send) now travel with the lists, so they are kept even though the bundled page
+  has no browser storage of its own.

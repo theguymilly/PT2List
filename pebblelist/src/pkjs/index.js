@@ -2,8 +2,13 @@
 // opens the editor page, and records items crossed out on the watch.
 // Items lined through (on the phone or the watch) are not sent to the watch.
 
-// Address where config.html is published (GitHub Pages).
+// The settings page is bundled inside this app (page.js, generated from config.html by
+// tools/embed.py), so it opens with no internet. If that fails to load, or USE_BUNDLED is
+// false, the copy published on GitHub Pages is opened instead.
 var CONFIG_URL = 'https://theguymilly.github.io/PT2List/pebblelist/config.html';
+var USE_BUNDLED = true;
+var PAGE_HTML = '';
+try { PAGE_HTML = require('./page'); } catch (e) { PAGE_HTML = ''; }
 
 var STORE_KEY = 'pebblelist_v1';
 var MAX_LISTS = 15, MAX_ITEMS = 20, TEXT_LEN = 63, NAME_LEN = 23, NOTE_LEN = 1000, DESC_LEN = 300;
@@ -26,6 +31,28 @@ function normalize(d) {
   var out = { upper: true, font: 1, lists: [] };   // capitals are always on
   var f = d && parseInt(d.font, 10);
   out.font = (f === 0 || f === 1 || f === 2) ? f : 1;
+  // page preferences ride along with the lists so they survive without browser storage
+  out.group = !!(d && d.group);
+  out.task = !!(d && d.task);
+  if (d && typeof d.auto === 'boolean') out.auto = d.auto;
+  if (d && Array.isArray(d.prio)) {
+    out.prio = d.prio.slice(0, 40).map(function (n) {
+      return String(n || '').trim().toUpperCase().substring(0, NAME_LEN);
+    });
+  }
+  if (d && d.loc && typeof d.loc === 'object') {
+    out.loc = {};
+    Object.keys(d.loc).slice(0, 40).forEach(function (k) {
+      var r = d.loc[k];
+      if (!/^30\d{2}$/.test(k) || !r) return;
+      out.loc[k] = {
+        cur: String(r.cur || '').substring(0, NAME_LEN),
+        hist: (Array.isArray(r.hist) ? r.hist : []).slice(-6).map(function (h) {
+          return String(h || '').substring(0, NAME_LEN);
+        })
+      };
+    });
+  }
   var lists = (d && d.lists) || [];
   for (var l = 0; l < lists.length && l < MAX_LISTS; l++) {
     var items = [];
@@ -120,14 +147,29 @@ Pebble.addEventListener('appmessage', function (e) {
     // Completing "TOW M4D" on a list named "3030 S3A11" moves the aircraft: "3030 M4D"
     var tm = /^TOW\s+(.+)$/i.exec(target.t || '');
     var nm = /^(30\d{2})\s+\S/.exec(list.name || '');
-    if (tm && nm) list.name = (nm[1] + ' ' + tm[1].trim().toUpperCase()).substring(0, NAME_LEN);
+    if (tm && nm) {
+      var oldName = String(list.name).trim().toUpperCase();
+      list.name = (nm[1] + ' ' + tm[1].trim().toUpperCase()).substring(0, NAME_LEN);
+      if (d.prio) {      // keep the saved priority order pointing at the renamed list
+        d.prio = d.prio.map(function (n) { return n === oldName ? list.name.toUpperCase() : n; });
+      }
+    }
     save(d);
   }
 });
 
+// Builds the address for the settings page: the bundled page with the lists written into it.
+function bundledUrl(d) {
+  var json = JSON.stringify(d)
+    .replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+  var html = PAGE_HTML.replace('/*__PL_INIT__*/', 'window.__PL_INIT__=' + json + ';');
+  return 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+}
+
 Pebble.addEventListener('showConfiguration', function () {
   var d = load();
-  Pebble.openURL(CONFIG_URL + '#' + encodeURIComponent(JSON.stringify(d)));
+  if (USE_BUNDLED && PAGE_HTML) Pebble.openURL(bundledUrl(d));
+  else Pebble.openURL(CONFIG_URL + '#' + encodeURIComponent(JSON.stringify(d)));
 });
 
 Pebble.addEventListener('webviewclosed', function (e) {
