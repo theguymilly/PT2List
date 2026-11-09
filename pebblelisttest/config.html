@@ -1,0 +1,2792 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAACQElEQVR42u3dQVKDUBREUWJlqOOsTReYtek4G3DgEItCJPDf63NWYFLXLvKJePl8f53gNy/eAsSBOBAH4kAciANxIA7EgThAHIgDcSAOxIE4EAfiQByIA8SBOBAH4kAciANxVHG7P273h/dBHIgDcSAOxIE4EAdVXTwTbJqm+fHG18ebt8VyIA7EgTgQB+JAHIgDcSAOxAEz6fdWlr80Gn6HxXIgDsSBOBAH4kAciANx0F7uCen6P6iPPSe1HIgDcSAOxIE4EAfiQBy0l3hCuu1ho4HnpJYDcSAOxIE4EAfioJisc47//zuVqNMOy4E4EAfiQByIA3FQTMo5x77/MDbktMNyIA7EgWuO0642oq48LAeRy/G8zQjZD8tB2HIcsxnt98NyELAcx69F+xWxHBRcjp8lWPNbOM5m/HU/1r9Gy8FYrq4zTl8+1xxYDpvRaD8sBy2Wo8paLP/khVbEclB8OepuRumrEMtB2eXotBnlXpflQByIA3EgDsSBOBAH4kAciANmRr+3su/dy9GeYDz4HRbLgTgQB+JAHPi0csDnAq/RciAOxMG5PIfUVZHlwHIcsxkh+2E5CFsOzyG1HFiOsTej8X5YDgKWwxOMLQeWo+ZmNNsPy4E4EAfiQByc6tr4tc0/LzzjL966Pu/QcrCk/zfB5rb9rid8G95yYDn224/AzbAcWI5NKxK7FpYDy4HlQByIA3EgDsSBOBAHiANxIA7EgTgQB+JAHIgDcSAOEAfiQByIA3EgDsSBOGjtG6bUiCH7MpfFAAAAAElFTkSuQmCC">
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAACQElEQVR42u3dQVKDUBREUWJlqOOsTReYtek4G3DgEItCJPDf63NWYFLXLvKJePl8f53gNy/eAsSBOBAH4kAciANxIA7EgThAHIgDcSAOxIE4EAfiQByIA8SBOBAH4kAciANxVHG7P273h/dBHIgDcSAOxIE4EAdVXTwTbJqm+fHG18ebt8VyIA7EgTgQB+JAHIgDcSAOxAEz6fdWlr80Gn6HxXIgDsSBOBAH4kAciANx0F7uCen6P6iPPSe1HIgDcSAOxIE4EAfiQBy0l3hCuu1ho4HnpJYDcSAOxIE4EAfioJisc47//zuVqNMOy4E4EAfiQByIA3FQTMo5x77/MDbktMNyIA7EgWuO0642oq48LAeRy/G8zQjZD8tB2HIcsxnt98NyELAcx69F+xWxHBRcjp8lWPNbOM5m/HU/1r9Gy8FYrq4zTl8+1xxYDpvRaD8sBy2Wo8paLP/khVbEclB8OepuRumrEMtB2eXotBnlXpflQByIA3EgDsSBOBAH4kAciANmRr+3su/dy9GeYDz4HRbLgTgQB+JAHPi0csDnAq/RciAOxMG5PIfUVZHlwHIcsxkh+2E5CFsOzyG1HFiOsTej8X5YDgKWwxOMLQeWo+ZmNNsPy4E4EAfiQByc6tr4tc0/LzzjL966Pu/QcrCk/zfB5rb9rid8G95yYDn224/AzbAcWI5NKxK7FpYDy4HlQByIA3EgDsSBOBAHiANxIA7EgTgQB+JAHIgDcSAOEAfiQByIA3EgDsSBOGjtG6bUiCH7MpfFAAAAAElFTkSuQmCC">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="LISTS">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Pebble Lists</title>
+<style>
+  :root { --bg:#f6f6f4; --card:#fff; --ink:#1b1b1b; --muted:#8a8a86; --line:#e4e4e0; --accent:#e8590c; --accent-ink:#fff; --danger:#c92a2a; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0e0e0e; --card:#1b1b1b; --ink:#f2f2f0; --muted:#8d8d89; --line:#2d2d2d; --accent:#ff7a2f; --accent-ink:#111; --danger:#ff6b6b; }
+  }
+  html, body {
+    touch-action:pan-x pan-y;
+    -webkit-text-size-adjust:100%;
+    overscroll-behavior:none;
+  }
+  * {
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+  }
+  html, body {
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font:17px/1.35 -apple-system, system-ui, sans-serif;
+  }
+  body { padding-bottom:0; }
+  button {
+    font:inherit;
+    color:inherit;
+    background:none;
+    border:0;
+    padding:0;
+    cursor:pointer;
+  }
+  header {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 16px 6px;
+    position:sticky;
+    top:0;
+    background:var(--bg);
+    z-index:3;
+  }
+  #title {
+    font-size:26px;
+    font-weight:700;
+    max-width:80%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  #title span {
+    color:var(--muted);
+    font-size:16px;
+    font-weight:500;
+  }
+  .hr { display:flex; align-items:center; gap:2px; }
+  #pri, #tsk, #grp { color:var(--muted); padding:4px 8px; border-radius:10px; line-height:0; }
+  #pri.on, #tsk.on, #grp.on { background:var(--accent, #ea580c); color:var(--accent-ink); }
+  #menu {
+    font-size:26px;
+    line-height:1;
+    padding:4px 8px;
+    color:var(--muted);
+  }
+  main {
+    min-height:calc(100vh - 160px);
+    position:relative;
+    touch-action:pan-y;
+  }
+  #pull {
+    overflow:hidden;
+    height:0;
+    text-align:center;
+    color:var(--muted);
+    font-size:14px;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+  }
+  #pull span { padding-bottom:8px; }
+  .item, .newrow {
+    display:flex;
+    align-items:center;
+    min-height:54px;
+    padding:8px 16px;
+    border-bottom:1px solid var(--line);
+    background:var(--bg);
+    position:relative;
+    transition:transform .15s;
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+  }
+  .txt {
+    flex:1;
+    min-width:0;
+    overflow-wrap:anywhere;
+  }
+  .item.done .txt,
+  .item.strike .txt {
+    text-decoration:line-through;
+    color:var(--muted);
+  }
+  .item.unstrike .txt {
+    text-decoration:none;
+    color:var(--ink);
+  }
+  .item.deleting .txt {
+    color:var(--danger);
+    text-decoration:none;
+  }
+  .edit {
+    flex:1;
+    min-width:0;
+    font:inherit;
+    color:var(--ink);
+    background:transparent;
+    border:0;
+    outline:0;
+    padding:0;
+    -webkit-user-select:text;
+    user-select:text;
+  }
+  .dragging {
+    z-index:4;
+    background:var(--card);
+    box-shadow:0 8px 24px rgba(0,0,0,.28);
+    border-radius:12px;
+    transition:none;
+  }
+  .editrow {
+    flex-direction:column;
+    align-items:stretch;
+    gap:8px;
+    padding:12px 16px;
+  }
+  .note-in {
+    width:100%;
+    font:16px/1.4 -apple-system, system-ui, sans-serif;
+    color:var(--ink);
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:8px 10px;
+    resize:none;
+    text-transform:uppercase;
+    -webkit-user-select:text;
+    user-select:text;
+  }
+  body.caps textarea.note-in {
+    text-transform:uppercase;
+  }
+  .item .body {
+    flex:1;
+    min-width:0;
+  }
+  .item .note {
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.35;
+    margin-top:3px;
+    white-space:pre-wrap;
+    overflow-wrap:anywhere;
+    text-transform:uppercase;
+  }
+  #came {
+    display:block;
+    margin:8px 16px 0;
+    padding:6px 12px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--card);
+    color:var(--muted);
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+  }
+  #came[hidden] { display:none; }
+  #came b { color:var(--ink); }
+  #desc {
+    padding:10px 16px;
+    border-bottom:1px solid var(--line);
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.4;
+    white-space:pre-wrap;
+    overflow-wrap:anywhere;
+    text-transform:uppercase;
+    touch-action:pan-y;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+  #desc.empty-desc { font-style:italic; opacity:.6; }
+  #desc.editing { padding:8px 16px; }
+  #desc textarea { margin:0; }
+  .empty {
+    text-align:center;
+    color:var(--muted);
+    padding:40px 24px;
+  }
+  .sendwrap {
+    padding:28px 16px calc(24px + env(safe-area-inset-bottom));
+  }
+  .primary {
+    width:100%;
+    padding:13px;
+    border-radius:12px;
+    background:var(--accent);
+    color:var(--accent-ink);
+    font-weight:600;
+  }
+  .backdrop {
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.4);
+    z-index:10;
+    display:none;
+  }
+  .backdrop.open { display:block; }
+  .sheet {
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    max-height:82vh;
+    overflow:auto;
+    background:var(--card);
+    border-radius:18px 18px 0 0;
+    padding:14px 16px calc(18px + env(safe-area-inset-bottom));
+    z-index:11;
+    display:none;
+  }
+  .sheet.open { display:block; }
+  .sheet h3 {
+    margin:4px 0 10px;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--muted);
+  }
+  .lrow {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    min-height:50px;
+    padding:6px 4px;
+    border-bottom:1px solid var(--line);
+    background:var(--card);
+    transition:transform .15s;
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+  }
+  .lrow.cur {
+    font-weight:700;
+    color:var(--accent);
+  }
+  .lrow small {
+    color:var(--muted);
+    font-weight:400;
+  }
+  .btns {
+    display:flex;
+    gap:8px;
+    margin-top:14px;
+  }
+  .btns button {
+    flex:1;
+    padding:11px 6px;
+    border:1px solid var(--line);
+    border-radius:10px;
+  }
+  .btns .danger { color:var(--danger); }
+  .inline {
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+  }
+  .inline[hidden] { display:none; }
+  .inline input {
+    flex:1;
+    min-width:0;
+    font:inherit;
+    color:var(--ink);
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:10px;
+  }
+  .inline button {
+    padding:10px 16px;
+    border-radius:10px;
+    background:var(--accent);
+    color:var(--accent-ink);
+    font-weight:600;
+  }
+  .hint {
+    color:var(--muted);
+    font-size:13px;
+    margin:8px 0 0;
+  }
+  body.caps,
+  body.caps input,
+  body.caps button,
+  body.caps select {
+    text-transform:uppercase;
+  }
+  body.caps textarea { text-transform:uppercase; }
+  .set {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .seg {
+    display:flex;
+    gap:6px;
+  }
+  .seg button {
+    padding:8px 12px;
+    border:1px solid var(--line);
+    border-radius:9px;
+  }
+  .seg button.on {
+    background:var(--accent);
+    color:var(--accent-ink);
+    border-color:var(--accent);
+  }
+  select,
+  textarea,
+  .field {
+    width:100%;
+    font:inherit;
+    color:var(--ink);
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:9px 10px;
+    margin-top:8px;
+  }
+  textarea {
+    min-height:110px;
+    font:16px/1.4 ui-monospace, Menlo, monospace;
+  }
+  .toast {
+    position:fixed;
+    top:12px;
+    left:50%;
+    transform:translateX(-50%);
+    background:var(--ink);
+    color:var(--bg);
+    padding:8px 14px;
+    border-radius:20px;
+    font-size:14px;
+    opacity:0;
+    transition:opacity .2s;
+    pointer-events:none;
+    z-index:20;
+    max-width:90vw;
+    text-align:center;
+  }
+  .toast.show { opacity:1; }
+  /* ================================================================
+     Phone split list view
+     The left column is as wide as the longest list name (min 64px,
+     max 55% of the screen). JS copies its width into --pw.
+     ================================================================ */
+  #phoneLists {
+    position:fixed;
+    left:0;
+    top:var(--hh, 58px);
+    bottom:0;
+    width:max-content;
+    min-width:64px;
+    max-width:55vw;
+    overflow-y:auto;
+    overflow-x:hidden;
+    touch-action:pan-y;
+    -webkit-overflow-scrolling:touch;
+    background:var(--card);
+    border-right:1px solid var(--line);
+    z-index:5;
+    padding-bottom:8px;
+  }
+  .phone-head {
+    position:sticky;
+    top:0;
+    z-index:3;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    min-height:34px;
+    padding:6px;
+    background:var(--bg);
+    border-bottom:1px solid var(--line);
+    color:var(--muted);
+    letter-spacing:.06em;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+  .phone-head .plist-name { flex:1; font-weight:700; }
+  .phone-head .plist-count { color:var(--ink); }
+  .phone-head { background:#111 !important; color:#fff; min-height:48px; gap:6px; padding:6px 8px; justify-content:center; }
+  .hg { display:flex; align-items:center; gap:5px; }
+  .hicon { image-rendering:pixelated; display:block; flex:0 0 auto; }
+  .hn { font-size:24px; font-weight:700; line-height:1; color:#fff; letter-spacing:0; font-variant-numeric:tabular-nums; }
+  .hdiv { width:2px; height:30px; background:#666; border-radius:1px; margin:0 6px; flex:0 0 auto; }
+  .phone-list-row {
+    position:relative;
+    min-height:46px;
+    overflow:hidden;
+    border-bottom:1px solid var(--line);
+    background:var(--card);
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+    touch-action:pan-y;
+  }
+  .phone-list-content {
+    position:relative;
+    z-index:2;
+    min-height:46px;
+    padding:7px 6px;
+    background:var(--card);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    will-change:transform;
+  }
+  .plist-name {
+    flex:1;
+    min-width:0;
+    font-size:13px;
+    font-weight:600;
+    line-height:1.15;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .plist-count {
+    flex:0 0 auto;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:600;
+    line-height:1;
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+  }
+  .plist-edit {
+    font:600 16px/1.2 -apple-system, system-ui, sans-serif;
+    width:130px;
+    padding:2px 4px;
+    color:var(--ink);
+    background:var(--card);
+    border:1px solid var(--accent);
+    border-radius:6px;
+    outline:0;
+    -webkit-user-select:text;
+    user-select:text;
+  }
+  .phone-list-row.cur .phone-list-content {
+    background:var(--accent);
+    color:var(--accent-ink);
+  }
+  .phone-list-row.cur .plist-count {
+    color:var(--accent-ink);
+    opacity:.8;
+  }
+  .phone-list-row.dragging-list {
+    z-index:20;
+    opacity:.9;
+    box-shadow:0 4px 14px rgba(0,0,0,.25);
+    border-radius:8px;
+  }
+  .phone-list-row.drop-up {
+    box-shadow:inset 0 3px 0 var(--accent);
+  }
+  .phone-list-row.drop-down {
+    box-shadow:inset 0 -3px 0 var(--accent);
+  }
+  .phone-list-delete {
+    position:absolute;
+    z-index:1;
+    top:0;
+    right:0;
+    bottom:0;
+    width:72px;
+    border:0;
+    margin:0;
+    padding:0;
+    background:#ff3b30;
+    color:#fff;
+    font-size:12px;
+    font-weight:700;
+    text-align:center;
+  }
+  #phoneLists, #phoneLists *, .phone-head { touch-action:pan-y; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
+  #phoneContent {
+    margin-left:var(--pw, 96px);
+    min-width:0;
+  }
+</style>
+</head>
+<body>
+<header>
+  <button id="title"></button>
+  <div class="hr">
+    <button id="pri" aria-label="Priority order (the order you set)" aria-pressed="true">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M10.2 2.5h3.6l-.7 12h-2.2zM12 17.2a2.1 2.1 0 1 1 0 4.2 2.1 2.1 0 0 1 0-4.2z"/></svg>
+    </button>
+    <button id="tsk" aria-label="Group lists by task" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" shape-rendering="crispEdges" aria-hidden="true"><path d="M3 1h3v1h-3zM16 1h2v1h-2zM4 2h3v1h-3zM15 2h4v1h-4zM1 3h1v1h-1zM5 3h3v1h-3zM14 3h6v1h-6zM1 4h2v1h-2zM6 4h2v1h-2zM15 4h6v1h-6zM1 5h3v1h-3zM6 5h2v1h-2zM16 5h6v1h-6zM2 6h7v1h-7zM16 6h7v1h-7zM3 7h7v1h-7zM14 7h9v1h-9zM6 8h5v1h-5zM13 8h4v1h-4zM19 8h3v1h-3zM7 9h4v1h-4zM12 9h5v1h-5zM20 9h1v1h-1zM8 10h2v1h-2zM11 10h5v1h-5zM10 11h5v1h-5zM9 12h5v1h-5zM8 13h5v1h-5zM14 13h2v1h-2zM7 14h5v1h-5zM13 14h4v1h-4zM6 15h5v1h-5zM13 15h5v1h-5zM5 16h5v1h-5zM14 16h7v1h-7zM4 17h5v1h-5zM15 17h7v1h-7zM3 18h5v1h-5zM16 18h2v1h-2zM20 18h3v1h-3zM3 19h4v1h-4zM16 19h2v1h-2zM21 19h2v1h-2zM4 20h2v1h-2zM16 20h3v1h-3zM17 21h3v1h-3zM18 22h2v1h-2z"/></svg>
+    </button>
+    <button id="grp" aria-label="Group lists by location" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+    </button>
+    <button id="menu" aria-label="Settings and export">⋯</button>
+  </div>
+</header>
+<div id="phoneLists"></div>
+<div id="phoneContent">
+  <main id="main">
+    <div id="pull">
+      <span id="pullTxt">Pull down to add</span>
+    </div>
+    <button id="came" type="button" hidden></button>
+    <div id="desc" role="button" tabindex="0"></div>
+    <div id="items"></div>
+    <div class="empty" id="emptyHint" hidden>
+      Nothing here yet.<br>
+      Pull down to add an item.
+    </div>
+    <div class="sendwrap">
+      <button id="save" class="primary">Send to watch</button>
+    </div>
+  </main>
+</div>
+<div class="backdrop" id="backdrop"></div>
+<div class="sheet" id="sheetLists">
+  <h3>Lists</h3>
+  <div id="lrows"></div>
+  <p class="hint">Tap to open · hold and drag to reorder</p>
+  <div class="btns">
+    <button id="lNew">New list</button>
+    <button id="lRename">Rename</button>
+    <button id="lDelete" class="danger">Delete</button>
+  </div>
+  <div class="inline" id="lInline" hidden>
+    <input type="text" id="lInput" maxlength="23" enterkeyhint="done">
+    <button id="lOk">OK</button>
+  </div>
+</div>
+<div class="sheet" id="sheetMenu">
+  <h3>Watch display</h3>
+  <div class="set">
+    <span>Text size</span>
+    <div class="seg" id="font">
+      <button data-v="0">Small</button>
+      <button data-v="1">Medium</button>
+      <button data-v="2">Large</button>
+    </div>
+  </div>
+  <h3 style="margin-top:18px">Export for Notes</h3>
+  <select id="fmt">
+    <option value="list">List only (items checked off)</option>
+    <option value="check">Checklist with boxes (☐ to do / ☑ done)</option>
+  </select>
+  <label class="hint" style="display:block">
+    <input type="checkbox" id="autoSend" checked>
+    Send to watch automatically when I leave this page
+  </label>
+  <label class="hint" style="display:block">
+    <input type="checkbox" id="withNotes" checked>
+    Include notes
+  </label>
+  <div class="btns">
+    <button id="share">Share…</button>
+  </div>
+  <div class="btns">
+    <button id="copy">Copy</button>
+    <button id="download">Download .txt</button>
+  </div>
+  <h3 style="margin-top:18px">Clear (after you've copied)</h3>
+  <div class="btns">
+    <button id="clearDone">Clear completed</button>
+    <button id="clearAll" class="danger">Clear all</button>
+  </div>
+  <p class="hint">Applies to every list. Tap twice to confirm, then Send to watch.</p>
+  <textarea id="preview" readonly></textarea>
+</div>
+<div class="toast" id="toast"></div>
+<script>/*__PL_INIT__*/</script>
+<script>
+  // The browser's "ResizeObserver loop" notice is harmless; don't let it surface as an uncaught error.
+  window.addEventListener('error', function (e) {
+    if (e && /ResizeObserver/.test(String(e.message || ''))) {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+    }
+  });
+  // If anything does go wrong, show the message in a small bar (tap it to dismiss)
+  // instead of failing silently, so the exact error can be read.
+  function showError(err) {
+    try {
+      var msg = String((err && err.message) || err || 'error');
+      var st = String((err && err.stack) || '').split('\n').slice(0, 2).join(' | ');
+      var bar = document.getElementById('errbar');
+      if (!bar) {
+        bar = document.createElement('div');
+        bar.id = 'errbar';
+        bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99;background:#c92a2a;color:#fff;font:12px/1.3 -apple-system,system-ui,sans-serif;padding:8px 12px;text-transform:none;word-break:break-word';
+        bar.addEventListener('click', function () { bar.style.display = 'none'; });
+        document.body.appendChild(bar);
+      }
+      bar.textContent = msg + (st ? '  [' + st + ']' : '');
+      bar.style.display = 'block';
+    } catch (e2) {}
+  }
+  window.addEventListener('error', function (e) {
+    if (e && /ResizeObserver/.test(String(e.message || ''))) return;
+    showError(e && (e.error || e.message));
+  });
+  window.addEventListener('unhandledrejection', function (e) { showError(e && e.reason); });
+
+(function () {
+  var MAX_LISTS = 15,
+      MAX_ITEMS = 20,
+      TEXT_LEN = 63,
+      NAME_LEN = 23,
+      NOTE_LEN = 1000,
+      DESC_LEN = 300,
+      AC_LEN = 300;
+  var AC_RE = /^30\d{2}(?:\s|$)/;
+  var LS = 'pebblelist_page_v1';
+  var fromApp = false,
+      returnTo = '';
+  var state;
+  (function init() {
+    var h = location.hash.slice(1);
+    // Bundled in the watch app: the app hands the lists over inside the page itself
+    if (window.__PL_INIT__ && window.__PL_INIT__.lists) {
+      state = window.__PL_INIT__;
+      fromApp = true;
+    }
+    try {
+      returnTo = new URLSearchParams(location.search).get('return_to') || '';
+    } catch (e) {}
+    // The app may append ?return_to=... after the #data part
+    var rm = h.match(/[?&]return_to=([^&]*)/);
+    if (rm) {
+      try { returnTo = returnTo || decodeURIComponent(rm[1]); } catch (e) {}
+      h = h.slice(0, rm.index);
+    }
+    if (returnTo) fromApp = true;
+    if (h && !state) {
+      try {
+        state = JSON.parse(decodeURIComponent(h));
+        fromApp = true;
+      } catch (e) {}
+    }
+    if (!state) {
+      try {
+        state = JSON.parse(localStorage.getItem(LS));
+      } catch (e) {}
+    }
+    if (!state || !state.lists || !state.lists.length) {
+      state = {
+        upper: true,
+        font: 1,
+        lists: [
+          {
+            name: 'My list',
+            items: []
+          }
+        ]
+      };
+    }
+    // ACFT is now a heading, not a list: drop an empty one saved earlier
+    var keep = state.lists.filter(function (l) {
+      return !(
+        String(l.name || '').trim().toUpperCase() === 'ACFT' &&
+        !(l.items && l.items.length)
+      );
+    });
+    if (keep.length) state.lists = keep;
+  })();
+  var cur = 0,
+      editing = null,
+      descEditing = false,
+      activeCommit = null;
+  var $ = function (id) {
+    return document.getElementById(id);
+  };
+  var list = function () {
+    return state.lists[cur];
+  };
+  var dirty = false,
+      leaving = false;
+  var lastSent = null;
+  function persist() {
+    // "dirty" only when something really differs from what was last sent
+    dirty = JSON.stringify(state) !== lastSent;
+    try {
+      localStorage.setItem(LS, JSON.stringify(state));
+    } catch (e) {}
+  }
+  function cleanNote(s) {
+    return String(s || '')
+      .replace(/\r/g, '')
+      .trim()
+      .toUpperCase()
+      .substring(0, NOTE_LEN);
+  }
+  function clean(s) {
+    return String(s || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .substring(0, TEXT_LEN);
+  }
+  function toast(msg, ms) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () {
+      t.classList.remove('show');
+    }, ms || 1800);
+  }
+  function buzz() {
+    try {
+      if (navigator.vibrate) navigator.vibrate(12);
+    } catch (e) {}
+  }
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+  /* ================================================================
+     Gesture engine
+     ================================================================ */
+  var lastTouch = 0;
+  function attachGestures(container, cfg) {
+    var g = null;
+    function rows() {
+      return Array.prototype.slice.call(
+        container.querySelectorAll(cfg.rowSel)
+      );
+    }
+    function start(x, y, target) {
+      if (cfg.blocked && cfg.blocked()) return;
+      var row = target.closest
+        ? target.closest(cfg.rowSel)
+        : null;
+      if (row && !container.contains(row)) row = null;
+      g = {
+        x:x,
+        y:y,
+        cy:y,
+        row:row,
+        target:target,
+        t0:Date.now(),
+        mode:'pending',
+        dx:0,
+        dy:0,
+        timer:null
+      };
+      if (row && cfg.onReorder) {
+        g.timer = setTimeout(function () {
+          if (g && g.mode === 'pending') beginDrag();
+        }, 380);
+      }
+    }
+    function move(x, y, ev) {
+      if (!g) return;
+      g.cy = y;
+      g.dx = x - g.x;
+      g.dy = y - g.y;
+      if (g.mode === 'pending') {
+        var ax = Math.abs(g.dx),
+            ay = Math.abs(g.dy);
+        if (ax < 9 && ay < 9) return;
+        clearTimeout(g.timer);
+        if (
+          g.row &&
+          cfg.onSwipe &&
+          ax > ay * 1.3
+        ) {
+          g.mode = 'swipe';
+        }
+        else if (
+          cfg.onPull &&
+          g.dy > 0 &&
+          ay > ax &&
+          window.scrollY <= 0
+        ) {
+          g.mode = 'pull';
+        }
+        else {
+          g.mode = 'scroll';
+          return;
+        }
+      }
+      if (g.mode === 'swipe') {
+        if (ev.cancelable) ev.preventDefault();
+        var d = Math.max(
+          -110,
+          Math.min(110, g.dx)
+        );
+        g.row.style.transition = 'none';
+        g.row.style.transform =
+          'translateX(' + d + 'px)';
+        var past = Math.abs(g.dx) >= 60,
+            wasDone =
+              g.row.classList.contains('done');
+        g.row.classList.toggle(
+          'strike',
+          past && g.dx > 0 && !wasDone
+        );
+        g.row.classList.toggle(
+          'unstrike',
+          past && g.dx > 0 && wasDone
+        );
+        g.row.classList.toggle(
+          'deleting',
+          past && g.dx < 0
+        );
+      }
+      else if (g.mode === 'pull') {
+        if (ev.cancelable) ev.preventDefault();
+        $('pull').style.height =
+          Math.min(g.dy * 0.6, 80) + 'px';
+        $('pullTxt').textContent =
+          g.dy >= 80
+            ? 'Release to add'
+            : 'Pull down to add';
+      }
+      else if (g.mode === 'drag') {
+        if (ev.cancelable) ev.preventDefault();
+        dragApply();
+      }
+    }
+    function end(ev) {
+      if (!g) return;
+      var s = g;
+      g = null;
+      clearTimeout(s.timer);
+      var handled = false;
+      if (s.mode === 'swipe') {
+        s.row.style.transition = '';
+        s.row.style.transform = '';
+        s.row.classList.remove(
+          'strike',
+          'unstrike',
+          'deleting'
+        );
+        if (Math.abs(s.dx) >= 60) {
+          cfg.onSwipe(
+            s.row,
+            s.dx > 0 ? 1 : -1
+          );
+        }
+        handled = true;
+      }
+      else if (s.mode === 'pull') {
+        $('pull').style.height = '0px';
+        if (s.dy >= 80) cfg.onPull();
+        handled = true;
+      }
+      else if (s.mode === 'drag') {
+        clearInterval(s.scroller);
+        s.row.classList.remove('dragging');
+        s.row.style.transform = '';
+        cfg.onReorder(
+          rows().map(function (r) {
+            return +r.getAttribute('data-i');
+          })
+        );
+        handled = true;
+      }
+      else if (
+        s.mode === 'pending' &&
+        s.row &&
+        Date.now() - s.t0 < 380
+      ) {
+        cfg.onTap(s.row, s.target);
+        handled = true;
+      }
+      if (
+        handled &&
+        ev &&
+        ev.cancelable &&
+        ev.preventDefault
+      ) {
+        ev.preventDefault();
+      }
+    }
+    function beginDrag() {
+      g.mode = 'drag';
+      g.startPageY =
+        g.cy + window.scrollY;
+      g.row.classList.add('dragging');
+      buzz();
+      g.scroller = setInterval(function () {
+        var y = g.cy,
+            h = window.innerHeight;
+        if (y < 110) {
+          window.scrollBy(0, -12);
+          dragApply();
+        }
+        else if (y > h - 160) {
+          window.scrollBy(0, 12);
+          dragApply();
+        }
+      }, 16);
+      dragApply();
+    }
+    function dragApply() {
+      var row = g.row,
+          pageY = g.cy + window.scrollY;
+      row.style.transform =
+        'translateY(' +
+        (pageY - g.startPageY) +
+        'px)';
+      var r = row.getBoundingClientRect(),
+          centre = r.top + r.height / 2,
+          sibs = rows();
+      for (var k = 0; k < sibs.length; k++) {
+        var s = sibs[k];
+        if (s === row) continue;
+        var sr = s.getBoundingClientRect(),
+            mid = sr.top + sr.height / 2;
+        var follows = !!(
+          row.compareDocumentPosition(s) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+        );
+        var before =
+          row.getBoundingClientRect().top;
+        if (follows && centre > mid) {
+          s.parentNode.insertBefore(
+            row,
+            s.nextSibling
+          );
+        }
+        else if (!follows && centre < mid) {
+          s.parentNode.insertBefore(row, s);
+        }
+        else {
+          continue;
+        }
+        g.startPageY +=
+          row.getBoundingClientRect().top - before;
+        row.style.transform =
+          'translateY(' +
+          (pageY - g.startPageY) +
+          'px)';
+        buzz();
+        break;
+      }
+    }
+    container.addEventListener(
+      'touchstart',
+      function (e) {
+        lastTouch = Date.now();
+        if (e.touches.length !== 1) {
+          g = null;
+          return;
+        }
+        start(
+          e.touches[0].clientX,
+          e.touches[0].clientY,
+          e.target
+        );
+      },
+      { passive:true }
+    );
+    container.addEventListener(
+      'touchmove',
+      function (e) {
+        if (e.touches.length === 1) {
+          move(
+            e.touches[0].clientX,
+            e.touches[0].clientY,
+            e
+          );
+        }
+      },
+      { passive:false }
+    );
+    container.addEventListener(
+      'touchend',
+      function (e) {
+        lastTouch = Date.now();
+        end(e);
+      },
+      { passive:false }
+    );
+    container.addEventListener(
+      'touchcancel',
+      function () {
+        if (g) {
+          clearTimeout(g.timer);
+          clearInterval(g.scroller);
+          if (g.row) {
+            g.row.classList.remove('dragging');
+            g.row.style.transform = '';
+          }
+        }
+        $('pull').style.height = '0px';
+        g = null;
+        render();
+      }
+    );
+    container.addEventListener(
+      'mousedown',
+      function (e) {
+        if (
+          Date.now() - lastTouch < 700 ||
+          e.button !== 0
+        ) return;
+        start(
+          e.clientX,
+          e.clientY,
+          e.target
+        );
+      }
+    );
+    window.addEventListener(
+      'mousemove',
+      function (e) {
+        if (
+          g &&
+          Date.now() - lastTouch >= 700
+        ) {
+          move(
+            e.clientX,
+            e.clientY,
+            e
+          );
+        }
+      }
+    );
+    window.addEventListener(
+      'mouseup',
+      function (e) {
+        if (
+          g &&
+          Date.now() - lastTouch >= 700
+        ) {
+          end(e);
+        }
+      }
+    );
+  }
+  /* ================================================================
+     Phone split list panel
+     ================================================================ */
+  function moveList(from, to) {
+    if (from === to) return;
+    var curList = state.lists[cur];
+    state.lists.splice(
+      to,
+      0,
+      state.lists.splice(from, 1)[0]
+    );
+    cur = state.lists.indexOf(curList);
+    if (!state.group && !state.task) savePrio(state.lists.map(nameKey));   // your priority order
+    persist();
+  }
+  // Number on the right of each list: tasks still to do (not lined through).
+  function isAcft(l) {
+    return String(l.name || '').trim().toUpperCase() === 'ACFT';
+  }
+  function openItems(l) {
+    return l.items.filter(function (i) { return !i.d; }).length;
+  }
+  // Finished lists (they have tasks, all lined through) sink to the bottom.
+  // Stable: every other list keeps its order. A brand-new empty list stays put.
+  function isFinished(l) {
+    return l.items.length > 0 && openItems(l) === 0;
+  }
+  // Location = second word of the name; its area = leading letters + digits
+  // (S3A11 and S3H are both area S3).
+  function areaKey(l) {
+    var w = String(l.name || '').trim().toUpperCase().split(/\s+/);
+    var loc = w[1] || '';
+    var m = /^[A-Z]+\d+/.exec(loc);
+    // every M location (M4D, M4A...) belongs to area S2, listed after the real S2 ones
+    if (/^M/.test(loc)) return { area: 'S2', loc: 'ZZZ' + loc };
+    // FUELS, CORROSION, PAINT and every SP location belong to area S1, after the real S1 ones
+    if (/^(FUELS?|CORROSION|PAINT|SP)/.test(loc)) return { area: 'S1', loc: 'ZZZ' + loc };
+    return { area: m ? m[0] : loc, loc: loc };
+  }
+  // Two tasks "match" when their text is identical (any TOW matches any TOW, any SERV any SERV).
+  // A list is filed under the open task it shares with the most other lists.
+  var taskInfo = new Map();
+  function matchKey(t) {
+    var u = String(t || '').replace(/\s+/g, ' ').trim().toUpperCase();
+    var m = /^(TOW|SERV)(\s|$)/.exec(u);   // any TOW / any SERV (SERV OIL, SERV EPU NITE...) match
+    if (m) return m[1];
+    return /^370/.test(u) ? '370' : u;     // 370SET, 370 SET... all match
+  }
+  function computeTaskInfo(lists) {
+    var count = {};
+    taskInfo = new Map();
+    lists.forEach(function (l) {
+      var seen = {};
+      l.items.forEach(function (it) {
+        if (it.d) return;
+        var k = matchKey(it.t);
+        if (k && !seen[k]) { seen[k] = 1; count[k] = (count[k] || 0) + 1; }
+      });
+    });
+    lists.forEach(function (l) {
+      var best = null;
+      l.items.forEach(function (it) {
+        if (it.d) return;
+        var k = matchKey(it.t), n = count[k] || 0;
+        if (n < 2) return;
+        if (!best || n > best.n || (n === best.n && k < best.k)) best = { k: k, n: n };
+      });
+      taskInfo.set(l, best || { k: '', n: 0 });
+    });
+  }
+  function byOrder(a, b) {
+    var c = 0, x, y;
+    if (state.group) {
+      x = areaKey(a.l); y = areaKey(b.l);
+      if (!x.area !== !y.area) return x.area ? -1 : 1;   // no location goes last
+      c = x.area.localeCompare(y.area, undefined, { numeric: true });
+      if (c) return c;
+    }
+    if (state.task) {
+      var ta = taskInfo.get(a.l) || { k: '', n: 0 }, tb = taskInfo.get(b.l) || { k: '', n: 0 };
+      if (!ta.k !== !tb.k) return ta.k ? -1 : 1;           // lists with no shared task go last
+      if (ta.n !== tb.n) return tb.n - ta.n;               // bigger groups first
+      c = ta.k.localeCompare(tb.k, undefined, { numeric: true });
+      if (c) return c;
+    }
+    if (state.group) {
+      c = x.loc.localeCompare(y.loc, undefined, { numeric: true });
+      if (c) return c;
+    }
+    return a.i - b.i;
+  }
+  // Priority order: the order you set by dragging lists. Saved on the page so it
+  // comes back when the group / task sorts are switched off.
+  var prio = null;
+  function nameKey(l) { return String(l.name || '').trim().toUpperCase(); }
+  function loadPrio() {
+    prio = Array.isArray(state.prio) ? state.prio : null;
+    if (!prio) { try { prio = JSON.parse(localStorage.getItem('pebblelist_prio')); } catch (e) { prio = null; } }
+    if (!Array.isArray(prio)) prio = state.lists.map(nameKey);
+    state.prio = prio;
+  }
+  function savePrio(names) {
+    prio = names;
+    state.prio = prio;
+    try { localStorage.setItem('pebblelist_prio', JSON.stringify(prio)); } catch (e) {}
+  }
+  function prioRename(from, to) {
+    from = String(from || '').trim().toUpperCase(); to = String(to || '').trim().toUpperCase();
+    if (!prio || from === to) return;
+    var i = prio.indexOf(from);
+    if (i >= 0) savePrio(prio.map(function (n, k) { return k === i ? to : n; }));
+  }
+  function byPrio(a, b) {
+    var x = prio ? prio.indexOf(nameKey(a.l)) : -1, y = prio ? prio.indexOf(nameKey(b.l)) : -1;
+    if (x < 0) x = 1e6; if (y < 0) y = 1e6;
+    return x - y || a.i - b.i;
+  }
+  function sortFinished() {
+    try { sortFinishedInner(); } catch (err) { showError(err); }
+  }
+  function sortFinishedInner() {
+    var curList = state.lists[cur];
+    var live = state.lists.filter(function (l) { return !isFinished(l); });
+    var done = state.lists.filter(isFinished);
+    {
+      var any = state.group || state.task;
+      if (any) computeTaskInfo(live.concat(done));   // finished lists too, so every list has an entry
+      [live, done].forEach(function (g, gi) {
+        var s = g.map(function (l, i) { return { l: l, i: i }; }).sort(any ? byOrder : byPrio).map(function (o) { return o.l; });
+        if (gi === 0) live = s; else done = s;
+      });
+    }
+    state.lists = live.concat(done);
+    if (curList) cur = Math.max(0, state.lists.indexOf(curList));
+  }
+  function countText(l) {
+    return String(openItems(l));
+  }
+  // The ACFT heading at the top of the left column is only a label:
+  // number of lists, then number of items still to do across all of them.
+  function totalOpen() {
+    var n = 0;
+    state.lists.forEach(function (l) { n += openItems(l); });
+    return n;
+  }
+  function layoutPanel() {
+    var h = document.querySelector('header').offsetHeight;
+    var de = document.documentElement.style;
+    de.setProperty('--hh', h + 'px');
+    de.setProperty('--pw', $('phoneLists').offsetWidth + 'px');
+  }
+  window.addEventListener('resize', layoutPanel);
+  if (window.ResizeObserver) new ResizeObserver(function () { requestAnimationFrame(layoutPanel); }).observe($('phoneLists'));
+  var renaming = false,
+      lastListTap = { i:-1, t:0 };
+  function startRename(index) {
+    if (renaming || editing) return;
+    var rows = $('phoneLists').querySelectorAll('.phone-list-row');
+    var row = rows[index];
+    if (!row) return;
+    var nameEl = row.querySelector('.plist-name');
+    var countEl = row.querySelector('.plist-count');
+    var inp = el('input', 'plist-edit');
+    inp.type = 'text';
+    inp.maxLength = NAME_LEN;
+    inp.value = state.lists[index].name;
+    inp.setAttribute('enterkeyhint', 'done');
+    renaming = true;
+    nameEl.replaceWith(inp);
+    if (countEl) countEl.hidden = true;
+    layoutPanel();
+    var done = false;
+    function finish(save) {
+      if (done) return;
+      done = true;
+      renaming = false;
+      var v = String(inp.value || '').replace(/\s+/g, ' ').trim().substring(0, NAME_LEN);
+      if (save && v) {
+        prioRename(state.lists[index].name, v);
+        state.lists[index].name = v;
+        persist();
+      }
+      render();
+    }
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+      else if (e.key === 'Escape') { finish(false); }
+    });
+    inp.addEventListener('blur', function () { finish(true); });
+    inp.focus();
+    try { inp.select(); } catch (e) {}
+  }
+  // Completing "TOW M4D" on an aircraft list named "3030 S3A11" moves the
+  // aircraft: the list becomes "3030 M4D". (Same rule runs on the watch.)
+  function towRename(l, it) {
+    var m = /^TOW\s+(.+)$/i.exec(it.t || '');
+    var n = /^(30\d{2})\s+\S/.exec(l.name || '');
+    if (!m || !n) return false;
+    var old = l.name;
+    l.name = (n[1] + ' ' + m[1].trim().toUpperCase()).substring(0, NAME_LEN);
+    prioRename(old, l.name);
+    return true;
+  }
+  // Description of the current list: shown above the items, phone only,
+  // never a task and never sent to the watch.
+  function renderDesc() {
+    var box = $('desc');
+    var d = list().desc || '';
+    box.className = d ? '' : 'empty-desc';
+    box.textContent = d ? '- ' + d + ' -' : 'Add description';   // shown wrapped in - -
+  }
+  function startDescEdit() {
+    if (editing || descEditing || sheetOpen() || renaming) return;
+    var l = list(), box = $('desc');
+    descEditing = true;
+    var ta = el('textarea', 'note-in');
+    ta.rows = 3;
+    ta.maxLength = DESC_LEN;
+    ta.value = l.desc || '';
+    ta.placeholder = 'Description for this list (phone only, not a task)';
+    box.className = 'editing';
+    box.textContent = '';
+    box.appendChild(ta);
+    ta.focus();
+    var done = false;
+    function finish() {
+      if (done) return;
+      done = true;
+      descEditing = false;
+      activeCommit = null;
+      var v = String(ta.value || '').replace(/\r/g, '').trim().toUpperCase().substring(0, DESC_LEN);
+      if (v) l.desc = v; else delete l.desc;
+      // no full re-render: a tap on another list that caused this blur still lands
+      renderDesc();
+      persist();
+      preview();
+    }
+    activeCommit = finish;
+    ta.addEventListener('blur', finish);
+    ta.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { ta.value = l.desc || ''; finish(); }
+    });
+  }
+  $('desc').addEventListener('click', function (e) {
+    if (e.target.tagName === 'TEXTAREA') return;
+    startDescEdit();
+  });
+  var ICON_JET = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAeCAYAAADHJYVoAAAAkklEQVR4nO2USw7AIAhEC+n9r0xXNIaAMqUf23SWOr4gjC4LIBERxM+IGdUccG0J0po5Kv/h98JtQrKJeb7yd8Kj/mb63oWPAKP9EJ5NRM/HngH9t6PzawXqnSUi0jW2m1W1nA/nvKJ9oO0grLx5ZPw8Mh6R8i59/lArQkhwc7fy6gvtws9SapBoWlSpyi0om64NLNxr9bDhsI4AAAAASUVORK5CYII=';
+  var ICON_TOOLS = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA/0lEQVR4nMWX2xLDIAhEwf//Z/vkTIZw2UVNeVMue5JSaEX+bOpdzjmniIiquv7KVj5SY1SFnsVYce8MAVhqFCKKy/LDN8BCdP1jOb0ApgeQWE9jVAG3IYZNZJtoF8LtgRXAincg6G6vijPQqqrDXlRJmYD1IfWgBkOaM4vJfOkkjMRs0QrQ5j/PEEAEgYjbuxcMCmAFVVV350YLwILsiIsQH8EN8RZAJN5Z3TRAJp7FHAFgXjsDAQGw33MGojV6d54cngNRsRPLqJyEXfEoJtsbL4Ad8Swvym8NIlbcO68HbW9DxJAGLru5I878MGkvo1MQ13qg++/qinUX1Sf2A/+8+A5GJ54nAAAAAElFTkSuQmCC';
+  function renderPhoneLists() {
+    var root = $('phoneLists');
+    root.innerHTML = '';
+    var head = el('div', 'phone-head');
+    var jetImg = el('img', 'hicon'); jetImg.src = ICON_JET; jetImg.width = 23; jetImg.height = 30; jetImg.alt = 'ACFT';
+    var toolImg = el('img', 'hicon'); toolImg.src = ICON_TOOLS; toolImg.width = 32; toolImg.height = 32; toolImg.alt = 'TASKS';
+    var g1 = el('div', 'hg'); g1.appendChild(jetImg); g1.appendChild(el('div', 'hn', String(state.lists.length)));
+    var g2 = el('div', 'hg'); g2.appendChild(toolImg); g2.appendChild(el('div', 'hn', String(totalOpen())));
+    head.appendChild(g1); head.appendChild(el('div', 'hdiv')); head.appendChild(g2);
+    root.appendChild(head);
+    state.lists.forEach(function (l, i) {
+      var row = el(
+        'div',
+        'phone-list-row' +
+        (i === cur ? ' cur' : '')
+      );
+      var content = el(
+        'div',
+        'phone-list-content'
+      );
+      content.appendChild(
+        el('div', 'plist-name', l.name)
+      );
+      content.appendChild(
+        el(
+          'div',
+          'plist-count',
+          countText(l)
+        )
+      );
+      var del = el(
+        'button',
+        'phone-list-delete',
+        'DELETE'
+      );
+      del.type = 'button';
+      del.setAttribute(
+        'aria-label',
+        'Delete ' + l.name
+      );
+      row.appendChild(content);
+      row.appendChild(del);
+      root.appendChild(row);
+      setupPhoneListGesture(
+        row,
+        content,
+        del,
+        i
+      );
+    });
+    layoutPanel();
+  }
+  function setupPhoneListGesture(
+    row,
+    content,
+    del,
+    index
+  ) {
+    var W = 72,
+        sx = 0,
+        sy = 0,
+        mode = null,
+        timer = null,
+        open = false,
+        curX = 0,
+        target = index;
+    function setX(x, anim) {
+      content.style.transition =
+        anim
+          ? 'transform .18s ease'
+          : 'none';
+      content.style.transform =
+        'translateX(' + x + 'px)';
+    }
+    function shut() {
+      open = false;
+      curX = 0;
+      setX(0, true);
+    }
+    function marks(clear) {
+      var rs =
+        $('phoneLists')
+        .querySelectorAll('.phone-list-row');
+      for (var k = 0; k < rs.length; k++) {
+        rs[k].classList.remove(
+          'drop-up',
+          'drop-down'
+        );
+        if (
+          !clear &&
+          k === target &&
+          k !== index
+        ) {
+          rs[k].classList.add(
+            k < index
+              ? 'drop-up'
+              : 'drop-down'
+          );
+        }
+      }
+    }
+    function reset() {
+      clearTimeout(timer);
+      row.classList.remove(
+        'dragging-list'
+      );
+      row.style.transform = '';
+      marks(true);
+    }
+    row.addEventListener(
+      'touchstart',
+      function (e) {
+        if (renaming || e.touches.length !== 1) return;
+        sx = e.touches[0].clientX;
+        sy = e.touches[0].clientY;
+        mode = 'pending';
+        target = index;
+        content.style.transition = 'none';
+        timer = setTimeout(function () {
+          if (mode !== 'pending') return;
+          mode = 'reorder';
+          if (open) shut();
+          row.classList.add(
+            'dragging-list'
+          );
+          buzz();
+        }, 350);
+      },
+      { passive:true }
+    );
+    row.addEventListener(
+      'touchmove',
+      function (e) {
+        if (
+          !mode ||
+          mode === 'scroll'
+        ) return;
+        var t = e.touches[0],
+            dx = t.clientX - sx,
+            dy = t.clientY - sy;
+        if (mode === 'pending') {
+          if (
+            Math.abs(dx) < 8 &&
+            Math.abs(dy) < 8
+          ) return;
+          clearTimeout(timer);
+          mode =
+            Math.abs(dx) > Math.abs(dy)
+              ? 'swipe'
+              : 'scroll';
+          if (mode === 'scroll') return;
+        }
+        if (e.cancelable) e.preventDefault();
+        if (mode === 'swipe') {
+          curX = Math.max(
+            -W,
+            Math.min(
+              0,
+              (open ? -W : 0) + dx
+            )
+          );
+          setX(curX, false);
+        }
+        else if (mode === 'reorder') {
+          row.style.transform =
+            'translateY(' + dy + 'px)';
+          var rs =
+            $('phoneLists')
+            .querySelectorAll('.phone-list-row');
+          target = index;
+          for (var k = 0; k < rs.length; k++) {
+            if (k === index) continue;
+            var r =
+              rs[k].getBoundingClientRect();
+            var mid =
+              r.top + r.height / 2;
+            if (
+              k < index &&
+              t.clientY < mid
+            ) {
+              target = Math.min(
+                target,
+                k
+              );
+            }
+            if (
+              k > index &&
+              t.clientY > mid
+            ) {
+              target = Math.max(
+                target,
+                k
+              );
+            }
+          }
+          marks(false);
+        }
+      },
+      { passive:false }
+    );
+    row.addEventListener(
+      'touchend',
+      function (e) {
+        var m = mode;
+        mode = null;
+        clearTimeout(timer);
+        if (m === 'swipe') {
+          if (
+            curX <= -W * 0.45
+          ) {
+            open = true;
+            curX = -W;
+            setX(-W, true);
+          }
+          else {
+            shut();
+          }
+        }
+        else if (m === 'reorder') {
+          var to = target;
+          reset();
+          moveList(index, to);
+          render();
+        }
+        else if (m === 'pending') {
+          if (e.target === del) return;
+          if (open) {
+            shut();
+            return;
+          }
+          if (editing) return;
+          var now = Date.now();
+          if (
+            lastListTap.i === index &&
+            now - lastListTap.t < 400
+          ) {
+            lastListTap = { i:-1, t:0 };
+            startRename(index);
+            return;
+          }
+          lastListTap = { i:index, t:now };
+          cur = index;
+          window.scrollTo(0, 0);
+          render();
+        }
+      },
+      { passive:true }
+    );
+    row.addEventListener(
+      'touchcancel',
+      function () {
+        mode = null;
+        reset();
+        setX(
+          open ? -W : 0,
+          true
+        );
+      }
+    );
+    row.addEventListener(
+      'dblclick',
+      function (e) {
+        if (e.target === del || open) return;
+        startRename(index);
+      }
+    );
+    del.addEventListener(
+      'click',
+      function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (editing) return;
+        state.lists.splice(index, 1);
+        if (!state.lists.length) {
+          state.lists.push({
+            name:'List',
+            items:[]
+          });
+          cur = 0;
+        }
+        else if (index < cur) {
+          cur--;
+        }
+        else if (cur >= state.lists.length) {
+          cur =
+            state.lists.length - 1;
+        }
+        persist();
+        render();
+      }
+    );
+  }
+  /* ================================================================
+     Items
+     ================================================================ */
+  // Location memory: remembers where each aircraft (30xx) was before, so a tow can be
+  // switched back. Noticed from the name itself, so tows done on the watch count too.
+  var LOCK = 'pebblelist_loc';
+  var locMap = (state.loc && typeof state.loc === 'object') ? state.loc : null;
+  if (!locMap) { try { locMap = JSON.parse(localStorage.getItem(LOCK)); } catch (e) {} }
+  if (!locMap || typeof locMap !== 'object') locMap = {};
+  state.loc = locMap;
+  function saveLoc() { state.loc = locMap; try { localStorage.setItem(LOCK, JSON.stringify(locMap)); } catch (e) {} }
+  function splitName(l) {
+    var m = /^(30\d{2})\s+(.+)$/.exec(String(l.name || '').trim().toUpperCase());
+    return m ? { tail: m[1], loc: m[2] } : null;
+  }
+  function trackLoc() {
+    var changed = false;
+    state.lists.forEach(function (l) {
+      var n = splitName(l);
+      if (!n) return;
+      var r = locMap[n.tail];
+      if (!r) { locMap[n.tail] = { cur: n.loc, hist: [] }; changed = true; }
+      else if (r.cur !== n.loc) {
+        if (r.cur) r.hist.push(r.cur);
+        if (r.hist.length > 6) r.hist.shift();
+        r.cur = n.loc; changed = true;
+      }
+    });
+    if (changed) saveLoc();
+  }
+  function backTask(l) {
+    var n = splitName(l), r = n && locMap[n.tail];
+    var prev = r && r.hist.length ? r.hist[r.hist.length - 1] : '';
+    if (!prev || prev === n.loc) return null;
+    var text = ('TOW ' + prev).substring(0, TEXT_LEN);
+    var have = l.items.some(function (i) { return !i.d && i.t === text; });
+    return have ? null : { prev: prev, text: text };
+  }
+  function renderCame() {
+    var b = $('came'), t = backTask(list());
+    if (!t) { b.hidden = true; return; }
+    b.hidden = false;
+    b.textContent = '';
+    b.appendChild(document.createTextNode('\u21A9 Add tow back to '));
+    b.appendChild(el('b', '', t.prev));
+  }
+  // Adds "TOW <old location>" at the top. Finishing that tow renames the list as usual.
+  $('came').addEventListener('click', function () {
+    var l = list(), t = backTask(l);
+    if (!t || l.items.length >= MAX_ITEMS) return;
+    l.items.unshift({ t: t.text, d: false });
+    persist();
+    render();
+  });
+  function render() {
+    state.upper = true;
+    trackLoc();
+    sortFinished();
+    $('pri').classList.toggle('on', !state.group && !state.task);
+    $('pri').setAttribute('aria-pressed', (!state.group && !state.task) ? 'true' : 'false');
+    $('tsk').classList.toggle('on', !!state.task);
+    $('tsk').setAttribute('aria-pressed', state.task ? 'true' : 'false');
+    $('grp').classList.toggle('on', !!state.group);
+    $('grp').setAttribute('aria-pressed', state.group ? 'true' : 'false');
+    document.body.classList.add('caps');
+    renderPhoneLists();
+    var l = list();
+    $('title').textContent = '';
+    $('title').appendChild(
+      document.createTextNode(
+        l.name + ' '
+      )
+    );
+    $('title').appendChild(
+      el('span', '', '▾')
+    );
+    if (!descEditing) renderDesc();
+    renderCame();
+    var root = $('items');
+    root.innerHTML = '';
+    function newRow(at) {
+      var row = el('div', 'newrow');
+      var inp = el('input', 'edit');
+      inp.type = 'text';
+      inp.maxLength = TEXT_LEN;
+      inp.placeholder = 'New item';
+      inp.setAttribute(
+        'enterkeyhint',
+        'next'
+      );
+      wireInput(inp, at);
+      row.appendChild(inp);
+      root.appendChild(row);
+    }
+    if (
+      editing &&
+      editing.isNew &&
+      editing.ii === 0
+    ) {
+      newRow(0);
+    }
+    l.items.forEach(function (it, ii) {
+      if (
+        editing &&
+        !editing.isNew &&
+        editing.ii === ii
+      ) {
+        var er = el(
+          'div',
+          'newrow editrow'
+        );
+        var inp = el(
+          'input',
+          'edit'
+        );
+        inp.type = 'text';
+        inp.maxLength = TEXT_LEN;
+        inp.value = it.t;
+        inp.setAttribute(
+          'enterkeyhint',
+          'done'
+        );
+        var note = el(
+          'textarea',
+          'note-in'
+        );
+        note.rows = 3;
+        note.maxLength = NOTE_LEN;
+        note.value = it.n || '';
+        note.placeholder =
+          'Note (kept on the phone only, never shown on the watch)';
+        wireEdit(
+          er,
+          inp,
+          note,
+          ii
+        );
+        er.appendChild(inp);
+        er.appendChild(note);
+        root.appendChild(er);
+      }
+      else {
+        var row = el(
+          'div',
+          'item' +
+          (it.d ? ' done' : '')
+        );
+        row.setAttribute(
+          'data-i',
+          ii
+        );
+        var body = el(
+          'div',
+          'body'
+        );
+        body.appendChild(
+          el(
+            'div',
+            'txt',
+            it.t
+          )
+        );
+        if (it.n) {
+          body.appendChild(
+            el(
+              'div',
+              'note',
+              '- ' + it.n + ' -'
+            )
+          );
+        }
+        row.appendChild(body);
+        root.appendChild(row);
+      }
+      if (
+        editing &&
+        editing.isNew &&
+        editing.ii === ii + 1
+      ) {
+        newRow(ii + 1);
+      }
+    });
+    $('emptyHint').hidden =
+      !(
+        l.items.length === 0 &&
+        !editing
+      );
+    preview();
+    persist();
+  }
+  /* ================================================================
+     Aircraft quick-list
+     ================================================================ */
+  function buildAircraftList(v) {
+    var tokens =
+      v.split(/\s+/).filter(Boolean);
+    if (
+      tokens.length < 2 ||
+      !/^30\d{2}$/.test(tokens[0])
+    ) {
+      return false;
+    }
+    var norm = function (s) {
+      return s
+        .replace(/^[\/-]+/, '')
+        .replace(/[\/-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+    var rest = tokens.slice(2),
+        tasks = [];
+    for (
+      var i = 0;
+      i < rest.length;
+      i++
+    ) {
+      var tok = rest[i],
+          up = tok.toUpperCase(),
+          m =
+            /^(TOW|RT|LT)(?:[\/-]+(.*))?$/i
+            .exec(tok);
+      if (m) {
+        var prefix =
+          m[1].toUpperCase();
+        var tail =
+          m[2]
+            ? norm(m[2])
+            : '';
+        if (
+          !m[2] &&
+          i + 1 < rest.length
+        ) {
+          tail =
+            norm(rest[++i]);
+        }
+        tasks.push(
+          clean(
+            prefix +
+            (tail
+              ? ' ' + tail
+              : '')
+          )
+        );
+      }
+      else if (
+        i + 1 < rest.length &&
+        /^(REM|INSTALL|SERV)$/i.test(
+          rest[i + 1]
+        )
+      ) {
+        tasks.push(
+          clean(
+            tok +
+            ' ' +
+            rest[++i].toUpperCase()
+          )
+        );
+      }
+      else if (
+        /^(REM|INSTALL|SERV)$/.test(up)
+      ) {
+        tasks.push(up);
+      }
+      else if (norm(tok)) {
+        tasks.push(
+          clean(norm(tok))
+        );
+      }
+    }
+    if (
+      state.lists.length >= MAX_LISTS
+    ) {
+      toast(
+        'Maximum ' +
+        MAX_LISTS +
+        ' lists'
+      );
+      return true;
+    }
+    var nl = {
+      name:
+        clean(
+          tokens[0] +
+          ' ' +
+          tokens[1]
+        ).substring(
+          0,
+          NAME_LEN
+        ),
+      items:[]
+    };
+    tasks.forEach(function (t) {
+      if (
+        t &&
+        nl.items.length < MAX_ITEMS
+      ) {
+        nl.items.push({
+          t:t,
+          d:false
+        });
+      }
+    });
+    if (
+      tasks.length > MAX_ITEMS
+    ) {
+      toast(
+        'Only the first ' +
+        MAX_ITEMS +
+        ' items were kept'
+      );
+    }
+    state.lists.push(nl);
+    cur =
+      state.lists.length - 1;
+    return true;
+  }
+  /* ================================================================
+     New item
+     ================================================================ */
+  function wireInput(inp, ii) {
+    var done = false;
+    activeCommit = function () {
+      finish(false);
+    };
+    function finish(next) {
+      if (done) return;
+      done = true;
+      activeCommit = null;
+      var raw =
+        String(inp.value || '')
+          .replace(/\s+/g, ' ')
+          .trim();
+      editing = null;
+      if (
+        AC_RE.test(raw) &&
+        buildAircraftList(raw)
+      ) {
+        render();
+        return;
+      }
+      var v = clean(raw),
+          items = list().items;
+      if (v) {
+        items.splice(
+          ii,
+          0,
+          {
+            t:v,
+            d:false
+          }
+        );
+        if (
+          next &&
+          items.length < MAX_ITEMS
+        ) {
+          editing = {
+            ii:ii + 1,
+            isNew:true
+          };
+        }
+        else if (next) {
+          toast(
+            'List is full (' +
+            MAX_ITEMS +
+            ')'
+          );
+        }
+      }
+      render();
+      if (editing) {
+        focusEdit();
+      }
+    }
+    inp.addEventListener(
+      'input',
+      function () {
+        inp.maxLength =
+          AC_RE.test(inp.value)
+            ? AC_LEN
+            : TEXT_LEN;
+      }
+    );
+    inp.addEventListener(
+      'keydown',
+      function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          finish(true);
+        }
+        else if (
+          e.key === 'Escape'
+        ) {
+          inp.value = '';
+          finish(false);
+        }
+      }
+    );
+    inp.addEventListener(
+      'blur',
+      function () {
+        finish(false);
+      }
+    );
+  }
+  /* ================================================================
+     Existing item edit
+     ================================================================ */
+  function wireEdit(
+    row,
+    inp,
+    note,
+    ii
+  ) {
+    var done = false;
+    activeCommit = function () {
+      finish();
+    };
+    function finish() {
+      if (done) return;
+      done = true;
+      activeCommit = null;
+      var v = clean(inp.value),
+          n = cleanNote(note.value),
+          items = list().items;
+      editing = null;
+      if (!v) {
+        items.splice(ii, 1);
+      }
+      else {
+        items[ii].t = v;
+        if (n) {
+          items[ii].n = n;
+        }
+        else {
+          delete items[ii].n;
+        }
+      }
+      render();
+    }
+    row.addEventListener(
+      'focusout',
+      function () {
+        setTimeout(
+          function () {
+            if (
+              !row.contains(
+                document.activeElement
+              )
+            ) {
+              finish();
+            }
+          },
+          0
+        );
+      }
+    );
+    inp.addEventListener(
+      'keydown',
+      function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          finish();
+        }
+        else if (
+          e.key === 'Escape'
+        ) {
+          var it =
+            list().items[ii] || {};
+          inp.value =
+            it.t || '';
+          note.value =
+            it.n || '';
+          finish();
+        }
+      }
+    );
+  }
+  function focusEdit() {
+    var i =
+      $('items')
+      .querySelector('input.edit');
+    if (i) {
+      i.focus();
+      var n =
+        i.value.length;
+      try {
+        i.setSelectionRange(n, n);
+      } catch (e) {}
+    }
+  }
+  function addAtTop() {
+    if (
+      list().items.length >= MAX_ITEMS
+    ) {
+      toast(
+        'List is full (' +
+        MAX_ITEMS +
+        ')'
+      );
+      return;
+    }
+    editing = {
+      ii:0,
+      isNew:true
+    };
+    render();
+    focusEdit();
+    window.scrollTo(0, 0);
+  }
+  attachGestures(
+    $('main'),
+    {
+      rowSel:'#items .item',
+      blocked:function () {
+        return !!editing || descEditing || sheetOpen();
+      },
+      onTap:function (row) {
+        editing = {
+          ii:+row.getAttribute('data-i'),
+          isNew:false
+        };
+        render();
+        focusEdit();
+      },
+      onSwipe:function (row, dir) {
+        var ii =
+          +row.getAttribute('data-i');
+        if (dir > 0) {
+          list().items[ii].d =
+            !list().items[ii].d;
+          if (list().items[ii].d) towRename(list(), list().items[ii]);   // no pop-up
+        }
+        else {
+          list().items.splice(ii, 1);
+        }
+        sortFinished();
+        buzz();
+        render();
+      },
+      onPull:addAtTop,
+      onReorder:function (order) {
+        var items =
+          list().items;
+        list().items =
+          order.map(function (i) {
+            return items[i];
+          });
+        render();
+      }
+    }
+  );
+  /* ================================================================
+     Lists sheet
+     ================================================================ */
+  var inlineMode = null;
+  function sheetOpen() {
+    return (
+      $('sheetLists').classList.contains('open') ||
+      $('sheetMenu').classList.contains('open')
+    );
+  }
+  function openSheet(id) {
+    $('backdrop').classList.add('open');
+    $(id).classList.add('open');
+    if (id === 'sheetLists') {
+      renderLists();
+    }
+    if (id === 'sheetMenu') {
+      renderMenu();
+    }
+  }
+  function closeSheets() {
+    $('backdrop').classList.remove('open');
+    $('sheetLists').classList.remove('open');
+    $('sheetMenu').classList.remove('open');
+    $('lInline').hidden = true;
+    inlineMode = null;
+    resetDelete();
+    if (typeof disarm === 'function') disarm();
+    render();
+  }
+  $('backdrop').addEventListener(
+    'click',
+    closeSheets
+  );
+  $('title').addEventListener(
+    'click',
+    function () {
+      if (!editing) {
+        openSheet('sheetLists');
+      }
+    }
+  );
+  $('menu').addEventListener(
+    'click',
+    function () {
+      if (!editing) {
+        openSheet('sheetMenu');
+      }
+    }
+  );
+  function renderLists() {
+    var root = $('lrows');
+    root.innerHTML = '';
+    state.lists.forEach(
+      function (l, i) {
+        var r = el(
+          'div',
+          'lrow' +
+          (i === cur ? ' cur' : '')
+        );
+        r.setAttribute(
+          'data-i',
+          i
+        );
+        r.appendChild(
+          el('span', '', l.name)
+        );
+        r.appendChild(
+          el(
+            'small',
+            '',
+            countText(l)
+          )
+        );
+        root.appendChild(r);
+      }
+    );
+    $('lNew').disabled =
+      state.lists.length >= MAX_LISTS;
+  }
+  attachGestures(
+    $('lrows'),
+    {
+      rowSel:'.lrow',
+      onTap:function (row) {
+        cur =
+          +row.getAttribute('data-i');
+        closeSheets();
+      },
+      onReorder:function (order) {
+        var curList = list();
+        state.lists =
+          order.map(function (i) {
+            return state.lists[i];
+          });
+        cur =
+          state.lists.indexOf(curList);
+        renderLists();
+        persist();
+      }
+    }
+  );
+  function showInline(
+    mode,
+    value
+  ) {
+    inlineMode = mode;
+    $('lInline').hidden = false;
+    $('lInput').value = value;
+    $('lInput').focus();
+    $('lInput').select();
+  }
+  $('lNew').addEventListener(
+    'click',
+    function () {
+      if (
+        state.lists.length < MAX_LISTS
+      ) {
+        showInline('new', '');
+      }
+    }
+  );
+  $('lRename').addEventListener(
+    'click',
+    function () {
+      showInline(
+        'rename',
+        list().name
+      );
+    }
+  );
+  function applyInline() {
+    var v =
+      String(
+        $('lInput').value || ''
+      )
+      .replace(/\s+/g, ' ')
+      .trim()
+      .substring(
+        0,
+        NAME_LEN
+      );
+    if (!v) {
+      $('lInline').hidden = true;
+      inlineMode = null;
+      return;
+    }
+    if (inlineMode === 'new') {
+      state.lists.push({
+        name:v,
+        items:[]
+      });
+      cur =
+        state.lists.length - 1;
+      closeSheets();
+      return;
+    }
+    if (inlineMode === 'rename') {
+      list().name = v;
+    }
+    $('lInline').hidden = true;
+    inlineMode = null;
+    renderLists();
+    render();
+  }
+  $('lOk').addEventListener(
+    'click',
+    applyInline
+  );
+  $('lInput').addEventListener(
+    'keydown',
+    function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        applyInline();
+      }
+    }
+  );
+  var delArmed = false;
+  function resetDelete() {
+    delArmed = false;
+    $('lDelete').textContent =
+      'Delete';
+  }
+  $('lDelete').addEventListener(
+    'click',
+    function () {
+      if (!delArmed) {
+        delArmed = true;
+        $('lDelete').textContent =
+          'Tap again';
+        setTimeout(
+          resetDelete,
+          3000
+        );
+        return;
+      }
+      state.lists.splice(cur, 1);
+      if (!state.lists.length) {
+        state.lists.push({
+          name:'My list',
+          items:[]
+        });
+      }
+      cur =
+        Math.min(
+          cur,
+          state.lists.length - 1
+        );
+      resetDelete();
+      renderLists();
+      render();
+    }
+  );
+  /* ================================================================
+     Settings + export
+     ================================================================ */
+  // ---- Clear completed / Clear all (two taps to confirm) ----
+  function doneCount() {
+    var n = 0;
+    state.lists.forEach(function (l) {
+      l.items.forEach(function (i) { if (i.d) n++; });
+    });
+    return n;
+  }
+  var armed = null, armTimer = null;
+  function disarm() {
+    armed = null;
+    clearTimeout(armTimer);
+    labelClear();
+  }
+  function labelClear() {
+    var n = doneCount();
+    $('clearDone').textContent =
+      armed === 'done' ? 'Tap again to confirm' : 'Clear completed (' + n + ')';
+    $('clearDone').disabled = n === 0;
+    $('clearAll').textContent =
+      armed === 'all' ? 'Tap again to confirm' : 'Clear all';
+  }
+  function armOrRun(which, run) {
+    if (armed !== which) {
+      armed = which;
+      labelClear();
+      clearTimeout(armTimer);
+      armTimer = setTimeout(disarm, 3000);
+      return;
+    }
+    disarm();
+    run();
+  }
+  $('clearDone').addEventListener('click', function () {
+    armOrRun('done', function () {
+      var n = doneCount();
+      state.lists.forEach(function (l) {
+        l.items = l.items.filter(function (i) { return !i.d; });
+      });
+      persist();
+      closeSheets();
+      toast('Cleared ' + n + ' completed');
+    });
+  });
+  $('clearAll').addEventListener('click', function () {
+    armOrRun('all', function () {
+      state.lists = [{ name: 'My list', items: [] }];
+      cur = 0;
+      locMap = {}; saveLoc();
+      persist();
+      closeSheets();
+      toast('Everything cleared');
+    });
+  });
+  function renderMenu() {
+    labelClear();
+    Array.prototype.forEach.call(
+      $('font').children,
+      function (b) {
+        b.classList.toggle(
+          'on',
+          +b.dataset.v === +state.font
+        );
+      }
+    );
+    preview();
+  }
+  $('font').addEventListener(
+    'click',
+    function (e) {
+      if (
+        e.target.dataset.v === undefined
+      ) return;
+      state.font =
+        +e.target.dataset.v;
+      renderMenu();
+      persist();
+    }
+  );
+  function exportText() {
+    var fmt =
+      $('fmt').value;
+    var withNotes =
+      $('withNotes').checked;
+    var out = [];
+    var U = function (s) {
+      return String(s).toUpperCase();
+    };
+    state.lists.forEach(
+      function (l) {
+        var items =
+          l.items.filter(
+            function (i) {
+              return (
+                i.t.trim() &&
+                (
+                  fmt === 'check' ||
+                  i.d
+                )
+              );
+            }
+          );
+        if (!items.length) return;
+        out.push(
+          U(l.name)
+        );
+        if (withNotes && l.desc) {
+          ('- ' + l.desc + ' -').split('\n').forEach(
+            function (ln) { out.push('    ' + ln); }
+          );
+        }
+        items.forEach(
+          function (i) {
+            out.push(
+              (
+                fmt === 'check'
+                  ? (
+                    i.d
+                      ? '☑ '
+                      : '☐ '
+                  )
+                  : ''
+              ) +
+              U(i.t)
+            );
+            if (
+              withNotes &&
+              i.n
+            ) {
+              ('- ' + i.n + ' -')
+                .split('\n')
+                .forEach(
+                  function (ln) {
+                    out.push(
+                      '    ' + ln
+                    );
+                  }
+                );
+            }
+          }
+        );
+        out.push('');
+      }
+    );
+    return out.join('\n').trim();
+  }
+  function preview() {
+    $('preview').value =
+      exportText();
+  }
+  $('fmt').addEventListener(
+    'change',
+    preview
+  );
+  $('withNotes').addEventListener(
+    'change',
+    preview
+  );
+  $('copy').addEventListener(
+    'click',
+    function () {
+      var t =
+        exportText();
+      function fallback() {
+        $('preview').select();
+        try {
+          document.execCommand('copy');
+        } catch (e) {}
+        toast('Copied');
+      }
+      if (
+        navigator.clipboard &&
+        navigator.clipboard.writeText
+      ) {
+        navigator.clipboard
+          .writeText(t)
+          .then(
+            function () {
+              toast('Copied');
+            },
+            fallback
+          );
+      }
+      else {
+        fallback();
+      }
+    }
+  );
+  $('share').addEventListener(
+    'click',
+    function () {
+      if (navigator.share) {
+        navigator.share({
+          title:'Lists',
+          text:exportText()
+        }).catch(
+          function () {}
+        );
+      }
+      else {
+        toast(
+          'Share is not available here – use Copy'
+        );
+      }
+    }
+  );
+  $('download').addEventListener(
+    'click',
+    function () {
+      var a = el('a');
+      a.href =
+        URL.createObjectURL(
+          new Blob(
+            [exportText()],
+            {
+              type:'text/plain'
+            }
+          )
+        );
+      a.download =
+        'lists.txt';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+  );
+  /* ================================================================
+     Send to watch
+     ================================================================ */
+  function sendNow(auto) {
+    if (activeCommit) {
+      activeCommit();
+    }
+    state.lists.forEach(
+      function (l) {
+        l.name =
+          (l.name || 'List')
+          .trim()
+          .substring(
+            0,
+            NAME_LEN
+          ) ||
+          'List';
+        l.items =
+          l.items.filter(
+            function (i) {
+              return (
+                i.t &&
+                i.t.trim()
+              );
+            }
+          );
+      }
+    );
+    persist();
+    if (!fromApp) {
+      if (!auto) {
+        toast(
+          "Open this page from the Pebble app's settings to send it"
+        );
+      }
+      return;
+    }
+    dirty = false;
+    lastSent = JSON.stringify(state);
+    if (!auto) toast('Sent to watch');
+    location.href =
+      (returnTo || 'pebblejs://close#') +
+      encodeURIComponent(JSON.stringify(state));
+    if (!auto) {
+      setTimeout(function () {
+        toast('Sent. If this page is still open, tap Done / Back in the Pebble app.', 6000);
+      }, 1500);
+    }
+  }
+  $('save').addEventListener(
+    'click',
+    function () {
+      sendNow(false);
+    }
+  );
+  /* ================================================================
+     Auto-send
+     ================================================================ */
+  [
+    'share',
+    'download',
+    'copy'
+  ].forEach(
+    function (id) {
+      $(id).addEventListener(
+        'click',
+        function () {
+          leaving = true;
+          setTimeout(
+            function () {
+              leaving = false;
+            },
+            5000
+          );
+        }
+      );
+    }
+  );
+  if (typeof state.auto === 'boolean') {
+    $('autoSend').checked = state.auto;
+  } else {
+    try {
+      var as =
+        localStorage.getItem(
+          'pebblelist_autosend'
+        );
+      if (as !== null) {
+        $('autoSend').checked =
+          as === '1';
+      }
+    } catch (e) {}
+  }
+  $('autoSend').addEventListener(
+    'change',
+    function () {
+      state.auto = this.checked;
+      persist();
+      try {
+        localStorage.setItem(
+          'pebblelist_autosend',
+          this.checked ? '1' : '0'
+        );
+      } catch (e) {}
+    }
+  );
+  document.addEventListener(
+    'visibilitychange',
+    function () {
+      if (
+        document.visibilityState === 'hidden' &&
+        dirty &&
+        !leaving &&
+        $('autoSend').checked
+      ) {
+        sendNow(true);
+      }
+    }
+  );
+  /* No pinch / double-tap zoom, anywhere (also inside the left column) */
+  document.addEventListener('touchmove', function (e) {
+    if (e.touches && e.touches.length > 1 && e.cancelable) e.preventDefault();
+  }, { passive:false });
+  var lastEnd = 0, lastEx = -999, lastEy = -999;
+  document.addEventListener('touchend', function (e) {
+    var now = Date.now();
+    var t = e.target && e.target.tagName;
+    var c = e.changedTouches && e.changedTouches[0];
+    var x = c ? c.clientX : 0, y = c ? c.clientY : 0;
+    // only a second tap on (about) the same spot counts as a double-tap
+    // inside the left column rows are only ~46px apart, so use a wider radius there
+    // (decided by position: the tap itself may have re-rendered and detached its target)
+    var pr = $('phoneLists').getBoundingClientRect();
+    var rad = (x >= pr.left && x <= pr.right && y >= pr.top && y <= pr.bottom) ? 110 : 40;
+    if (
+      now - lastEnd < 320 &&
+      Math.abs(x - lastEx) < rad && Math.abs(y - lastEy) < rad &&
+      t !== 'INPUT' && t !== 'TEXTAREA' && t !== 'SELECT' &&
+      e.cancelable
+    ) {
+      e.preventDefault();
+    }
+    lastEnd = now; lastEx = x; lastEy = y;
+  }, { passive:false });
+  [
+    'gesturestart',
+    'gesturechange',
+    'gestureend'
+  ].forEach(
+    function (ev) {
+      document.addEventListener(
+        ev,
+        function (e) {
+          e.preventDefault();
+        }
+      );
+    }
+  );
+  $('pri').addEventListener('click', function () {
+    state.group = false; state.task = false;
+    try { localStorage.setItem('pebblelist_group', '0'); localStorage.setItem('pebblelist_task', '0'); } catch (e) {}
+    sortFinished();
+    persist();
+    render();
+  });
+  $('tsk').addEventListener('click', function () {
+    state.task = !state.task;
+    try { localStorage.setItem('pebblelist_task', state.task ? '1' : '0'); } catch (e) {}
+    sortFinished();
+    persist();
+    render();
+  });
+  $('grp').addEventListener('click', function () {
+    state.group = !state.group;
+    try { localStorage.setItem('pebblelist_group', state.group ? '1' : '0'); } catch (e) {}
+    sortFinished();
+    persist();
+    render();
+  });
+  if (typeof state.group !== 'boolean') {
+    try { state.group = localStorage.getItem('pebblelist_group') === '1'; } catch (e) { state.group = false; }
+  }
+  if (typeof state.task !== 'boolean') {
+    try { state.task = localStorage.getItem('pebblelist_task') === '1'; } catch (e) { state.task = false; }
+  }
+  loadPrio();
+  sortFinished();
+  render();
+  lastSent = JSON.stringify(state);
+  dirty = false;
+})();
+</script>
+</body>
+</html>
